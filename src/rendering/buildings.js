@@ -64,11 +64,11 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
     
     const baseBoxGeom = new THREE.BoxGeometry(1, 1, 1);
     
-    // Architectural gray material
+    // Warm architectural cream material
     const buildingMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
-        roughness: 0.55,
-        metalness: 0.1,
+        roughness: 0.50,
+        metalness: 0.05,
         flatShading: true
     });
     
@@ -77,9 +77,20 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
     instancedMesh.castShadow = true;
     instancedMesh.receiveShadow = true;
     
-    // Status colors
-    const floodedColor = new THREE.Color(0xe65100); // warm amber warning
-    const savedColor   = new THREE.Color(0x10b981); // bright glowing emerald green
+    // Status colors matching user reference:
+    // Cream: normal dry buildings
+    // Yellow: partially affected by water overflowing the quays (0.05m <= h < 0.40m)
+    // Red: completely endangered in deep/rushing flood (h >= 0.40m)
+    // Green: saved by barrier in comparison mode
+    const yellowPartialColor = new THREE.Color(0xfacc15); // bright amber/yellow
+    const redEndangeredColor = new THREE.Color(0xef4444); // bright alert red
+    const savedColor         = new THREE.Color(0x10b981); // bright glowing emerald green
+    
+    // Helper to generate warm cream color for building i
+    function getCreamColor(i) {
+        const v = (i % 7) * 0.012;
+        return new THREE.Color(0.91 + v, 0.88 + v, 0.82 + v); // warm architectural cream
+    }
     
     const dummy = new THREE.Object3D();
     for (let i = 0; i < count; i++) {
@@ -89,9 +100,8 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
         dummy.updateMatrix();
         instancedMesh.setMatrixAt(i, dummy.matrix);
         
-        // Sleek architectural gray with micro-shading variation
-        const tint = 0.50 + (i % 7) * 0.02;
-        instancedMesh.setColorAt(i, new THREE.Color(tint, tint * 1.02, tint * 1.05));
+        // Warm cream building color
+        instancedMesh.setColorAt(i, getCreamColor(i));
     }
     instancedMesh.instanceMatrix.needsUpdate = true;
     if (instancedMesh.instanceColor) {
@@ -101,36 +111,68 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
     // Function to update building colors based on water simulation
     function updateFloodStatus(simulator, baselineSimulator = null, sideBySide = false) {
         let floodedCount = 0;
+        let endangeredCount = 0;
+        let partialCount = 0;
         let savedCount = 0;
         
         for (let i = 0; i < count; i++) {
             const b = validBuildings[i];
-            const sample = simulator.samplePoint(b.u, b.v);
-            const isFloodedNow = sample.h > 0.08;
+            
+            // Sample building footprint (center + edges) so water rushing through any edge marks it
+            const du = (b.sizeX / width_m) * 0.45;
+            const dv = (b.sizeZ / height_m) * 0.45;
+            
+            let maxH = simulator.samplePoint(b.u, b.v).h;
+            maxH = Math.max(maxH, simulator.samplePoint(b.u - du, b.v).h);
+            maxH = Math.max(maxH, simulator.samplePoint(b.u + du, b.v).h);
+            maxH = Math.max(maxH, simulator.samplePoint(b.u, b.v - dv).h);
+            maxH = Math.max(maxH, simulator.samplePoint(b.u, b.v + dv).h);
+            
+            // Mark building only if water reaches/rushes through it (h >= 0.05m)
+            const isFloodedNow = maxH >= 0.05;
             b.isFlooded = isFloodedNow;
+            b.depth = maxH;
             
             if (isFloodedNow) {
                 floodedCount++;
+                if (maxH >= 0.40) {
+                    endangeredCount++;
+                    b.status = 'endangered';
+                } else {
+                    partialCount++;
+                    b.status = 'partial';
+                }
+            } else {
+                b.status = 'safe';
             }
             
             if (sideBySide && baselineSimulator) {
-                const baseSample = baselineSimulator.samplePoint(b.u, b.v);
-                const wasFloodedInBase = baseSample.h > 0.08;
+                let baseMaxH = baselineSimulator.samplePoint(b.u, b.v).h;
+                baseMaxH = Math.max(baseMaxH, baselineSimulator.samplePoint(b.u - du, b.v).h);
+                baseMaxH = Math.max(baseMaxH, baselineSimulator.samplePoint(b.u + du, b.v).h);
+                baseMaxH = Math.max(baseMaxH, baselineSimulator.samplePoint(b.u, b.v - dv).h);
+                baseMaxH = Math.max(baseMaxH, baselineSimulator.samplePoint(b.u, b.v + dv).h);
+                
+                const wasFloodedInBase = baseMaxH >= 0.05;
                 // If flooded without barrier, but dry with barrier: IT IS SAVED!
                 b.isSaved = wasFloodedInBase && !isFloodedNow;
-                if (b.isSaved) savedCount++;
+                if (b.isSaved) {
+                    savedCount++;
+                    b.status = 'saved';
+                }
             } else {
                 b.isSaved = false;
             }
             
             if (b.isSaved) {
                 instancedMesh.setColorAt(i, savedColor);
-            } else if (b.isFlooded) {
-                instancedMesh.setColorAt(i, floodedColor);
+            } else if (b.status === 'endangered') {
+                instancedMesh.setColorAt(i, redEndangeredColor);
+            } else if (b.status === 'partial') {
+                instancedMesh.setColorAt(i, yellowPartialColor);
             } else {
-                // Architectural gray
-                const tint = 0.50 + (i % 7) * 0.02;
-                instancedMesh.setColorAt(i, new THREE.Color(tint, tint * 1.02, tint * 1.05));
+                // Architectural cream
+                instancedMesh.setColorAt(i, getCreamColor(i));
             }
         }
         
@@ -138,7 +180,13 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
             instancedMesh.instanceColor.needsUpdate = true;
         }
         
-        return { floodedCount, savedCount, totalBuildings: count };
+        return { 
+            floodedCount, 
+            endangeredCount, 
+            partialCount, 
+            savedCount, 
+            totalBuildings: count 
+        };
     }
     
     return {

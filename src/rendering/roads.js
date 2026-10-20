@@ -40,7 +40,7 @@ export function createRoadsLayer(meta, roadsData, elevArray) {
         
         const geom = new THREE.BufferGeometry().setFromPoints(linePoints);
         const mat = new THREE.LineBasicMaterial({
-            color: 0x334155, // clean dark slate road on black ground
+            color: 0x151a22, // crisp dark charcoal street network on gray ground
             linewidth: 2,
             transparent: true,
             opacity: 0.85

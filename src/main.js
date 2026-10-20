@@ -56,8 +56,8 @@ async function init() {
     renderer.toneMappingExposure = 1.05;
     
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x080b12);
-    scene.fog = new THREE.FogExp2(0x080b12, 0.00035);
+    scene.background = new THREE.Color(0x181e28);
+    scene.fog = new THREE.FogExp2(0x181e28, 0.00030);
     
     // Camera
     const camera = new THREE.PerspectiveCamera(
@@ -161,6 +161,8 @@ async function init() {
     const readoutCoords = document.getElementById('readout-coords');
     
     const statFloodedBldgs = document.getElementById('stat-flooded-bldgs');
+    const statEndangeredBldgs = document.getElementById('stat-endangered-bldgs');
+    const statPartialBldgs = document.getElementById('stat-partial-bldgs');
     const statRoadsCutoff = document.getElementById('stat-roads-cutoff');
     const statSavedBldgs = document.getElementById('stat-saved-bldgs');
     const statPeakDepth = document.getElementById('stat-peak-depth');
@@ -168,15 +170,24 @@ async function init() {
     const roadsList = document.getElementById('roads-list');
     const btnExportMap = document.getElementById('btn-export-map');
     
-    // Bottom Bar
+    // Top Bar Quick Actions
+    const btnQuickExport = document.getElementById('btn-quick-export');
+    const btnQuickReset = document.getElementById('btn-quick-reset');
+    
+    // Bottom Bar (Reference Image 4)
     const btnPlayPause = document.getElementById('btn-play-pause');
     const iconPlay = document.getElementById('icon-play');
     const iconPause = document.getElementById('icon-pause');
-    const btnReset = document.getElementById('btn-reset');
     const floodClockText = document.getElementById('flood-clock-text');
     const timelineProgressFill = document.getElementById('timeline-progress-fill');
+    const scrubberKnob = document.getElementById('scrubber-knob');
     const timelineScrubber = document.getElementById('timeline-scrubber');
+    const btnHomeView = document.getElementById('btn-home-view');
     const btnCycleCamera = document.getElementById('btn-cycle-camera');
+    const btnToggleCamera = document.getElementById('btn-toggle-camera');
+    const btnTogglePanels = document.getElementById('btn-toggle-panels');
+    const controlsPanel = document.getElementById('controls-panel');
+    const readoutsPanel = document.getElementById('readouts-panel');
     const fpsCounter = document.getElementById('fps-counter');
     
     // Selected Inspection Point (defaults to Quay Street)
@@ -303,14 +314,38 @@ async function init() {
         setPlayState(!isPlaying);
     });
     
-    btnReset.addEventListener('click', () => {
+    function resetSimulation() {
         simulator.reset();
         baselineSimulator.reset();
         barriersManager.loadPresets(presetsResp);
         inspector.hide();
         updateBarrierUI();
-    });
+        if (timelineProgressFill) timelineProgressFill.style.width = '0%';
+        if (scrubberKnob) scrubberKnob.style.left = '0%';
+        if (floodClockText) floodClockText.textContent = '00:00';
+    }
     
+    if (btnQuickReset) {
+        btnQuickReset.addEventListener('click', resetSimulation);
+    }
+    if (btnQuickExport) {
+        btnQuickExport.addEventListener('click', () => {
+            exportPeakDepthMap(simulator, meta, bldgsResp, roadsResp, activeScenarioTag.textContent);
+        });
+    }
+
+    // Timeline Scrubber Interaction
+    timelineScrubber.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        simulator.totalSimTime = val;
+        const pct = Math.min(100, (val / 21600) * 100);
+        timelineProgressFill.style.width = `${pct}%`;
+        if (scrubberKnob) scrubberKnob.style.left = `${pct}%`;
+        const totalHours = Math.floor(val / 3600);
+        const totalMins = Math.floor((val % 3600) / 60);
+        floodClockText.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')}`;
+    });
+
     // Speed Controls: 60x, 300x, 900x, Max
     document.querySelectorAll('.speed-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -352,9 +387,32 @@ async function init() {
         };
     }
     
-    btnCycleCamera.addEventListener('click', () => {
-        triggerCameraTransition(cameraVantageIndex + 1);
-    });
+    if (btnHomeView) {
+        btnHomeView.addEventListener('click', () => {
+            triggerCameraTransition(0);
+        });
+    }
+
+    if (btnCycleCamera) {
+        btnCycleCamera.addEventListener('click', () => {
+            triggerCameraTransition(cameraVantageIndex + 1);
+        });
+    }
+
+    if (btnToggleCamera) {
+        btnToggleCamera.addEventListener('click', () => {
+            // Toggle between 3D overview (0) and Top-Down ordnance (3)
+            triggerCameraTransition(cameraVantageIndex === 3 ? 0 : 3);
+        });
+    }
+
+    if (btnTogglePanels) {
+        btnTogglePanels.addEventListener('click', () => {
+            const isHidden = controlsPanel.classList.toggle('panel-hidden');
+            readoutsPanel.classList.toggle('panel-hidden');
+            btnTogglePanels.classList.toggle('active', !isHidden);
+        });
+    }
     
     // In-Scene Floating Landmark Labels
     const worldLabels = [
@@ -440,7 +498,7 @@ async function init() {
         frameCount++;
         if (now - lastFpsUpdate >= 1000) {
             const fps = Math.round((frameCount * 1000) / (now - lastFpsUpdate));
-            fpsCounter.textContent = `${fps} FPS`;
+            if (fpsCounter) fpsCounter.textContent = `${fps} FPS`;
             frameCount = 0;
             lastFpsUpdate = now;
         }
@@ -475,6 +533,8 @@ async function init() {
             const unmitigatedNow = floodedNow + savedNow;
             
             statFloodedBldgs.textContent = floodedNow.toLocaleString();
+            if (statEndangeredBldgs) statEndangeredBldgs.textContent = bldgStats.endangeredCount.toLocaleString();
+            if (statPartialBldgs) statPartialBldgs.textContent = bldgStats.partialCount.toLocaleString();
             statSavedBldgs.textContent = savedNow.toLocaleString();
             
             // Road Network Cutoffs
@@ -541,13 +601,15 @@ async function init() {
                 sbsRightStat.textContent = `Saved: ${savedNow} (${((savedNow / Math.max(1, unmitigatedNow)) * 100).toFixed(1)}% Safe)`;
             }
             
-            // Flood Clock & Scrubber
+            // Flood Clock & Scrubber (Matches User Reference Image 4: 00:00 of 06:00 simulated)
             const simSec = simulator.totalSimTime;
-            const simHrs = (simSec / 3600).toFixed(1);
-            floodClockText.textContent = `T + ${simHrs} hrs`;
+            const totalHours = Math.floor(simSec / 3600);
+            const totalMins = Math.floor((simSec % 3600) / 60);
+            floodClockText.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')}`;
             
-            const progressPct = Math.min(100, (simSec / 86400) * 100);
+            const progressPct = Math.min(100, (simSec / 21600) * 100);
             timelineProgressFill.style.width = `${progressPct}%`;
+            if (scrubberKnob) scrubberKnob.style.left = `${progressPct}%`;
             timelineScrubber.value = simSec;
             
             // Update floating inspector
