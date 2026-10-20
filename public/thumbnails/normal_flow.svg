@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <defs>
+    <linearGradient id="sky1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="60%" stop-color="#bae6fd"/>
+      <stop offset="100%" stop-color="#f0f9ff"/>
+    </linearGradient>
+    <linearGradient id="river1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="50%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#1e40af"/>
+    </linearGradient>
+    <linearGradient id="bridge1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+  </defs>
+  <rect width="160" height="100" fill="url(#sky1)"/>
+  <!-- Distant Comeragh mountains -->
+  <path d="M0,55 Q40,38 80,48 T160,42 L160,65 L0,65 Z" fill="#475569" opacity="0.4"/>
+  <path d="M0,60 Q50,48 100,56 T160,52 L160,68 L0,68 Z" fill="#334155" opacity="0.6"/>
+  <!-- Old Bridge stone arches -->
+  <rect x="0" y="62" width="160" height="12" fill="url(#bridge1)"/>
+  <!-- Bridge arches -->
+  <path d="M15,74 A12,12 0 0,0 39,74 Z M55,74 A12,12 0 0,0 79,74 Z M95,74 A12,12 0 0,0 119,74 Z M135,74 A12,12 0 0,0 159,74 Z" fill="#1e3a8a"/>
+  <!-- Suir river water with soft ripples -->
+  <rect x="0" y="74" width="160" height="26" fill="url(#river1)"/>
+  <path d="M0,82 Q40,80 80,83 T160,81" stroke="#60a5fa" stroke-width="1" fill="none" opacity="0.6"/>
+  <path d="M0,90 Q40,88 80,91 T160,89" stroke="#93c5fd" stroke-width="1" fill="none" opacity="0.5"/>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <defs>
+    <linearGradient id="sky3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#451a03"/>
+      <stop offset="50%" stop-color="#78350f"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="surgeWater" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e40af"/>
+      <stop offset="40%" stop-color="#2563eb"/>
+      <stop offset="80%" stop-color="#0284c7"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+  </defs>
+  <rect width="160" height="100" fill="url(#sky3)"/>
+  <!-- Submerged quayside buildings -->
+  <rect x="10" y="40" width="28" height="30" fill="#334155"/>
+  <polygon points="10,40 24,28 38,40" fill="#1e293b"/>
+  <rect x="45" y="46" width="35" height="24" fill="#475569"/>
+  <rect x="105" y="42" width="45" height="28" fill="#334155"/>
+  <!-- High flood surge waters covering the quay -->
+  <rect x="0" y="62" width="160" height="38" fill="url(#surgeWater)"/>
+  <!-- Rushing crest waves -->
+  <path d="M0,64 Q25,58 50,65 T100,60 T160,66" stroke="#bae6fd" stroke-width="2" fill="none" opacity="0.8"/>
+  <path d="M0,74 Q35,70 70,76 T140,71 T160,75" stroke="#7dd3fc" stroke-width="1.5" fill="none" opacity="0.6"/>
+  <path d="M0,86 Q40,82 80,88 T160,84" stroke="#38bdf8" stroke-width="1" fill="none" opacity="0.5"/>
+</svg>

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <defs>
+    <linearGradient id="sandbagGrad1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="50%" stop-color="#b45309"/>
+      <stop offset="100%" stop-color="#78350f"/>
+    </linearGradient>
+    <linearGradient id="sandbagGrad2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="50%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#92400e"/>
+    </linearGradient>
+  </defs>
+  <rect width="160" height="100" fill="#0f172a"/>
+  <!-- Dry road behind -->
+  <polygon points="0,0 160,0 160,50 0,55" fill="#1e293b"/>
+  <!-- Stacked Sandbag Pyramids -->
+  <!-- Layer 1 (bottom) -->
+  <g fill="url(#sandbagGrad1)">
+    <rect x="2" y="65" width="30" height="14" rx="4"/>
+    <rect x="34" y="64" width="30" height="14" rx="4"/>
+    <rect x="66" y="63" width="30" height="14" rx="4"/>
+    <rect x="98" y="62" width="30" height="14" rx="4"/>
+    <rect x="130" y="61" width="28" height="14" rx="4"/>
+  </g>
+  <!-- Layer 2 (mid) -->
+  <g fill="url(#sandbagGrad2)">
+    <rect x="16" y="54" width="28" height="13" rx="4"/>
+    <rect x="48" y="53" width="28" height="13" rx="4"/>
+    <rect x="80" y="52" width="28" height="13" rx="4"/>
+    <rect x="112" y="51" width="28" height="13" rx="4"/>
+  </g>
+  <!-- Layer 3 (top) -->
+  <g fill="url(#sandbagGrad1)">
+    <rect x="32" y="44" width="26" height="12" rx="4"/>
+    <rect x="64" y="43" width="26" height="12" rx="4"/>
+    <rect x="96" y="42" width="26" height="12" rx="4"/>
+  </g>
+  <!-- Swirling river water on front -->
+  <polygon points="0,79 160,75 160,100 0,100" fill="#2563eb"/>
+  <path d="M0,84 Q40,80 80,83 T160,78" stroke="#93c5fd" stroke-width="1.5" fill="none" opacity="0.7"/>
+</svg>

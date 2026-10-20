@@ -1,0 +1,83 @@
+{
+  "north_quay_wall": {
+    "name": "North Quay Demountable Wall (The Quay / Quay St)",
+    "type": "wall",
+    "height": 2.2,
+    "points": [
+      [
+        -7.712,
+        52.3526
+      ],
+      [
+        -7.7095,
+        52.3528
+      ],
+      [
+        -7.707,
+        52.353
+      ],
+      [
+        -7.704,
+        52.3532
+      ],
+      [
+        -7.701,
+        52.353
+      ],
+      [
+        -7.698,
+        52.3525
+      ]
+    ]
+  },
+  "south_quay_wall": {
+    "name": "South Bank Flood Barrier (Denis Burke Park / Old Bridge)",
+    "type": "wall",
+    "height": 2.0,
+    "points": [
+      [
+        -7.7115,
+        52.3518
+      ],
+      [
+        -7.7085,
+        52.3519
+      ],
+      [
+        -7.7055,
+        52.352
+      ],
+      [
+        -7.702,
+        52.352
+      ],
+      [
+        -7.699,
+        52.3516
+      ]
+    ]
+  },
+  "suir_island_barriers": {
+    "name": "Suir Island Perimeter Sandbags",
+    "type": "sandbags",
+    "height": 1.2,
+    "points": [
+      [
+        -7.7085,
+        52.3524
+      ],
+      [
+        -7.706,
+        52.3525
+      ],
+      [
+        -7.704,
+        52.3526
+      ],
+      [
+        -7.7035,
+        52.3522
+      ]
+    ]
+  }
+}

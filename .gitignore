@@ -1,0 +1,9 @@
+node_modules/
+dist/
+cache/
+.vite/
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 100" width="160" height="100">
+  <defs>
+    <linearGradient id="wallAlum" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#94a3b8"/>
+      <stop offset="25%" stop-color="#e2e8f0"/>
+      <stop offset="50%" stop-color="#cbd5e1"/>
+      <stop offset="75%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </linearGradient>
+    <linearGradient id="postSteel" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="50%" stop-color="#64748b"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+  </defs>
+  <!-- Background quayside atmosphere -->
+  <rect width="160" height="100" fill="#0f172a"/>
+  <!-- Dry Quay promenade on left/back -->
+  <polygon points="0,0 160,0 160,65 0,80" fill="#1e293b"/>
+  <!-- Demountable Aluminium Flood Barrier Panels -->
+  <polygon points="0,48 160,35 160,65 0,78" fill="url(#wallAlum)"/>
+  <!-- Horizontal aluminium slat grooves -->
+  <line x1="0" y1="54" x2="160" y2="41" stroke="#64748b" stroke-width="1"/>
+  <line x1="0" y1="60" x2="160" y2="47" stroke="#64748b" stroke-width="1"/>
+  <line x1="0" y1="66" x2="160" y2="53" stroke="#64748b" stroke-width="1"/>
+  <line x1="0" y1="72" x2="160" y2="59" stroke="#64748b" stroke-width="1"/>
+  <!-- Vertical Support Posts -->
+  <rect x="25" y="44" width="8" height="34" fill="url(#postSteel)"/>
+  <rect x="75" y="38" width="8" height="32" fill="url(#postSteel)"/>
+  <rect x="125" y="33" width="8" height="30" fill="url(#postSteel)"/>
+  <!-- River Suir water held back on front/right -->
+  <polygon points="0,78 160,65 160,100 0,100" fill="#1d4ed8"/>
+  <path d="M0,82 Q40,76 80,80 T160,72" stroke="#60a5fa" stroke-width="1.5" fill="none" opacity="0.7"/>
+</svg>

@@ -1,0 +1,15 @@
+{
+  "test_name": "Ritter Dam-Break Analytical Comparison",
+  "nx": 600,
+  "length_m": 1000.0,
+  "initial_depth_m": 10.0,
+  "dam_location_m": 500.0,
+  "time_s": 15.0,
+  "steps": 621,
+  "initial_volume_m3": 5000.0,
+  "final_volume_m3": 5016.824620306616,
+  "mass_conservation_error_percent": 0.33649240613232906,
+  "depth_rmse_m": 0.3272853232061796,
+  "relative_rmse_percent": 3.272853232061796,
+  "passed": true
+}

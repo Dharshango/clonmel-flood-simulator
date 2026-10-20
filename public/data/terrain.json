@@ -1,0 +1,18 @@
+{
+  "bbox": {
+    "south": 52.345,
+    "north": 52.364,
+    "west": -7.73,
+    "east": -7.68
+  },
+  "width_m": 3402.4041230797297,
+  "height_m": 2114.2268683946636,
+  "grid_w": 600,
+  "grid_h": 400,
+  "dx": 5.670673538466216,
+  "dy": 5.285567170986659,
+  "min_elev": 15.6171875,
+  "max_elev": 121.99609375,
+  "town": "Clonmel, County Tipperary, Ireland",
+  "river": "River Suir"
+}

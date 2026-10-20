@@ -1,0 +1,15 @@
+{
+  "name": "flood-simulator-clonmel",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.40.0",
+    "three": "^0.183.2",
+    "vite": "^8.3.4"
+  }
+}
