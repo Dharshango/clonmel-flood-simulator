@@ -12,10 +12,62 @@
 </head>
 <body>
     <div id="app">
+        <!-- Separate Hero Section for Clonmel Flood Simulator -->
+        <section id="hero-section" class="hero-overlay">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-dot"></span>
+                    CLONMEL, CO. TIPPERARY • RIVER SUIR
+                </div>
+                <h1 class="hero-title">FREEBOARD</h1>
+                <p class="hero-subtitle">Real-Time 3D Shallow Water Hydrodynamic Flood Simulator</p>
+                <p class="hero-desc">
+                    An interactive digital twin of Clonmel designed for town residents, elected councillors, and emergency planners.
+                    Simulate 1-in-100-year River Suir flood surges, draw demountable flood walls along the quays,
+                    and replay before-and-after defenses side-by-side on real terrain.
+                </p>
+                
+                <div class="hero-features-grid">
+                    <div class="hero-card">
+                        <div class="hero-card-icon">🏛️</div>
+                        <h3>Real Town & Terrain</h3>
+                        <p>6,638 OpenStreetMap building footprints, actual Suir bathymetry, and Clonmel street network.</p>
+                    </div>
+                    <div class="hero-card">
+                        <div class="hero-card-icon">🌊</div>
+                        <h3>GPU Shallow Water</h3>
+                        <p>2D Kurganov-Petrova Saint-Venant solver on WebGL2 framebuffers with strict mass conservation.</p>
+                    </div>
+                    <div class="hero-card">
+                        <div class="hero-card-icon">🛡️</div>
+                        <h3>Interactive Barriers</h3>
+                        <p>Draw aluminium demountable walls or sandbag lines live and compare protected vs unprotected scenarios.</p>
+                    </div>
+                </div>
+
+                <div class="hero-actions">
+                    <button id="btn-hero-launch" class="btn-hero-launch">
+                        <span>Launch Simulation</span>
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
         <!-- Floating Top Navigation Overlay (Model generation directly visible underneath) -->
         <header id="top-nav" class="floating-header">
-            <!-- Left Branding: Accent Bars + Freeboard, Clonmel, River Suir + Quick Actions -->
+            <!-- Left: Back Button + Branding -->
             <div class="brand-group">
+                <button id="btn-back-hero" class="btn-back-hero" title="Back to Overview">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Overview</span>
+                </button>
                 <div class="brand-bars">
                     <span class="bar-orange"></span>
                     <span class="bar-cyan"></span>
@@ -24,22 +76,10 @@
                     <h1 class="brand-title">Freeboard</h1>
                     <span class="brand-sub">Clonmel, River Suir</span>
                 </div>
-                <div class="brand-actions">
-                    <button id="btn-quick-export" class="header-icon-btn" title="Export Peak Depth Map">
-                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                        </svg>
-                    </button>
-                    <button id="btn-quick-reset" class="header-icon-btn" title="Reset Simulation">
-                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                        </svg>
-                    </button>
-                </div>
             </div>
             
-            <!-- Segmented Pill: ONLY 3 Options (Live, Barrier, Compare) -->
-            <nav class="header-modes" aria-label="Simulation Modes">
+            <!-- Center Tabs: EXACTLY in the center of the website (Live, Barrier, Compare) -->
+            <nav class="header-modes center-modes" aria-label="Simulation Modes">
                 <button id="tab-live" class="mode-tab active" title="Live shallow water flood simulation">
                     Live
                 </button>
@@ -50,6 +90,24 @@
                     Compare
                 </button>
             </nav>
+
+            <!-- Right: Quick Actions + FPS Counter Badge -->
+            <div class="header-right-group">
+                <button id="btn-quick-export" class="header-icon-btn" title="Export Peak Depth Map">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                </button>
+                <button id="btn-quick-reset" class="header-icon-btn" title="Reset Simulation">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                </button>
+                <div class="badge-status">
+                    <span class="pulse-dot"></span>
+                    <span id="fps-counter">60 FPS</span>
+                </div>
+            </div>
         </header>
 
         <!-- Main 3D Viewport -->
@@ -95,89 +153,175 @@
                 </div>
             </div>
 
-            <!-- Side-by-Side Compare Split Overlay -->
+            <!-- Side-by-Side Compare Split Overlay with Exact Rigorous Information on Both Sides -->
             <div id="side-by-side-overlay" class="hidden">
-                <div class="sbs-label left-label">
-                    <span class="tag danger">WITHOUT BARRIER (BASELINE FLOOD)</span>
-                    <span id="sbs-left-stat">Flooded: 0 Buildings</span>
+                <!-- Left: Unprotected Baseline Flood -->
+                <div class="sbs-comparison-card unmitigated">
+                    <div class="sbs-card-badge danger">WITHOUT BARRIER (BASELINE FLOOD)</div>
+                    <div class="sbs-stat-hero">
+                        <span id="sbs-unmit-flooded" class="sbs-big-number">0</span>
+                        <span class="sbs-lbl">Buildings Flooded</span>
+                    </div>
+                    <div class="sbs-details-list">
+                        <div class="sbs-row">
+                            <span>Cut-Off Streets:</span>
+                            <strong id="sbs-unmit-roads">0 roads</strong>
+                        </div>
+                        <div class="sbs-row">
+                            <span>Peak Quay Depth:</span>
+                            <strong id="sbs-unmit-depth">0.00 m</strong>
+                        </div>
+                        <div class="sbs-row">
+                            <span>River Defense:</span>
+                            <span class="text-danger">None (Quays Overtopped)</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="sbs-label right-label">
-                    <span class="tag success">WITH QUAY BARRIER (PROTECTED)</span>
-                    <span id="sbs-right-stat">Saved: 0 Buildings (100% Safe)</span>
+
+                <div class="sbs-divider-line"></div>
+
+                <!-- Right: With Quay Barriers Protected -->
+                <div class="sbs-comparison-card protected">
+                    <div class="sbs-card-badge success">WITH QUAY BARRIERS (PROTECTED)</div>
+                    <div class="sbs-stat-hero">
+                        <span id="sbs-saved-bldgs" class="sbs-big-number text-success">0</span>
+                        <span class="sbs-lbl">Structures Preserved Safe (Green)</span>
+                    </div>
+                    <div class="sbs-details-list">
+                        <div class="sbs-row">
+                            <span>Defense Barrier:</span>
+                            <strong class="text-success">2.8m Demountable Quay Wall</strong>
+                        </div>
+                        <div class="sbs-row">
+                            <span>Protection Benefit:</span>
+                            <strong id="sbs-protect-rate" class="text-success">100% Protected</strong>
+                        </div>
+                        <div class="sbs-row">
+                            <span>Town Street Depth:</span>
+                            <strong class="text-success">0.00 m (Dry Behind Wall)</strong>
+                        </div>
+                    </div>
                 </div>
-                <div class="sbs-divider"></div>
             </div>
 
-            <!-- Left Panel: Scenario Controls -->
+            <!-- Left Panel: Scenario Controls / Barrier Studio -->
             <aside id="controls-panel" class="clean-panel left-panel">
-                <div class="panel-header">
-                    <span class="panel-title">SCENARIO CONTROLS</span>
-                    <span id="active-scenario-tag" class="pill-tag">1-in-100-Yr Flood</span>
-                </div>
-
-                <!-- Scenario Selection Buttons -->
-                <div class="scenario-buttons-stack">
-                    <button class="scenario-btn" data-scenario="normal">
-                        <div class="s-dot blue"></div>
-                        <div class="s-info">
-                            <span class="s-name">Normal River Flow</span>
-                            <span class="s-val">55 m³/s • Channel baseline</span>
-                        </div>
-                    </button>
-
-                    <button class="scenario-btn active" data-scenario="flood100">
-                        <div class="s-dot red"></div>
-                        <div class="s-info">
-                            <span class="s-name">1-in-100-Yr Flood</span>
-                            <span class="s-val">450 m³/s • Overtopping quays</span>
-                        </div>
-                    </button>
-
-                    <button class="scenario-btn" data-scenario="surge">
-                        <div class="s-dot amber"></div>
-                        <div class="s-info">
-                            <span class="s-name">Storm Surge & Rain</span>
-                            <span class="s-val">400 m³/s + 50 mm/h rain</span>
-                        </div>
-                    </button>
-                </div>
-
-                <!-- Parameter Sliders -->
-                <div class="sliders-stack">
-                    <div class="slider-field">
-                        <div class="slider-labels">
-                            <span>River Suir Inflow</span>
-                            <span id="val-inflow" class="mono-val">450 m³/s</span>
-                        </div>
-                        <input type="range" id="slider-inflow" min="20" max="650" step="10" value="450">
+                <!-- 1. Live Scenario Controls View -->
+                <div id="scenario-controls-view">
+                    <div class="panel-header">
+                        <span class="panel-title">SCENARIO CONTROLS</span>
+                        <span id="active-scenario-tag" class="pill-tag">1-in-100-Yr Flood</span>
                     </div>
 
-                    <div class="slider-field">
-                        <div class="slider-labels">
-                            <span>Heavy Rainfall</span>
-                            <span id="val-rain" class="mono-val">0 mm/h</span>
-                        </div>
-                        <input type="range" id="slider-rain" min="0" max="80" step="5" value="0">
+                    <!-- Scenario Selection Buttons -->
+                    <div class="scenario-buttons-stack">
+                        <button class="scenario-btn" data-scenario="normal">
+                            <div class="s-dot blue"></div>
+                            <div class="s-info">
+                                <span class="s-name">Normal River Flow</span>
+                                <span class="s-val">55 m³/s • Channel baseline</span>
+                            </div>
+                        </button>
+
+                        <button class="scenario-btn active" data-scenario="flood100">
+                            <div class="s-dot red"></div>
+                            <div class="s-info">
+                                <span class="s-name">1-in-100-Yr Flood</span>
+                                <span class="s-val">450 m³/s • Overtopping quays</span>
+                            </div>
+                        </button>
+
+                        <button class="scenario-btn" data-scenario="surge">
+                            <div class="s-dot amber"></div>
+                            <div class="s-info">
+                                <span class="s-name">Storm Surge & Rain</span>
+                                <span class="s-val">400 m³/s + 50 mm/h rain</span>
+                            </div>
+                        </button>
                     </div>
 
-                    <div class="slider-field">
-                        <div class="slider-labels">
-                            <span>Downstream Surge</span>
-                            <span id="val-surge" class="mono-val">+0.00 m</span>
+                    <!-- Parameter Sliders -->
+                    <div class="sliders-stack">
+                        <div class="slider-field">
+                            <div class="slider-labels">
+                                <span>River Suir Inflow</span>
+                                <span id="val-inflow" class="mono-val">450 m³/s</span>
+                            </div>
+                            <input type="range" id="slider-inflow" min="20" max="650" step="10" value="450">
                         </div>
-                        <input type="range" id="slider-surge" min="-0.5" max="3.0" step="0.05" value="0.00">
+
+                        <div class="slider-field">
+                            <div class="slider-labels">
+                                <span>Heavy Rainfall</span>
+                                <span id="val-rain" class="mono-val">0 mm/h</span>
+                            </div>
+                            <input type="range" id="slider-rain" min="0" max="80" step="5" value="0">
+                        </div>
+
+                        <div class="slider-field">
+                            <div class="slider-labels">
+                                <span>Downstream Surge</span>
+                                <span id="val-surge" class="mono-val">+0.00 m</span>
+                            </div>
+                            <input type="range" id="slider-surge" min="-0.5" max="3.0" step="0.05" value="0.00">
+                        </div>
                     </div>
                 </div>
 
-                <!-- Flood Barrier Controls -->
-                <div class="barrier-control-box">
-                    <div class="barrier-title-row">
-                        <span>Quay Flood Barrier</span>
+                <!-- 2. Barrier Defense Studio View (Active when Barrier tab is clicked) -->
+                <div id="barrier-studio-view" class="hidden">
+                    <div class="panel-header">
+                        <span class="panel-title">BARRIER DEFENSE STUDIO</span>
                         <span id="barrier-status-text" class="status-pill-green">ACTIVE</span>
                     </div>
-                    <div class="barrier-buttons-row">
-                        <button id="btn-toggle-wall" class="btn-sub primary">Deploy Quay Wall (2.8m)</button>
-                        <button id="btn-clear-barriers" class="btn-sub danger">Remove</button>
+
+                    <p class="barrier-guide-hint">
+                        Draw flood barriers to stop river water from flowing into vulnerable quayside buildings.
+                    </p>
+
+                    <!-- Barrier Mode Selection -->
+                    <div class="barrier-tools-stack">
+                        <button id="btn-tool-wall" class="barrier-tool-card active" data-tool="wall">
+                            <span class="b-icon">🧱</span>
+                            <div class="b-meta">
+                                <span class="b-title">Draw Flood Wall</span>
+                                <span class="b-sub">2.8m Demountable Aluminium</span>
+                            </div>
+                        </button>
+
+                        <button id="btn-tool-sandbags" class="barrier-tool-card" data-tool="sandbags">
+                            <span class="b-icon">🛡️</span>
+                            <div class="b-meta">
+                                <span class="b-title">Place Sandbag Bund</span>
+                                <span class="b-sub">1.2m Heavy Sandbag Defense</span>
+                            </div>
+                        </button>
+
+                        <button id="btn-tool-preset" class="barrier-tool-card preset" data-tool="preset">
+                            <span class="b-icon">🏛️</span>
+                            <div class="b-meta">
+                                <span class="b-title">Clonmel Relief Scheme</span>
+                                <span class="b-sub">Official Quay Walls & Bunds</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- Barrier Length & Height Metrics -->
+                    <div class="barrier-stats-box">
+                        <div class="b-stat-line">
+                            <span>Defended Quay Perimeter:</span>
+                            <span id="stat-barrier-length" class="mono-val">1,480 m</span>
+                        </div>
+                        <div class="b-stat-line">
+                            <span>Barrier Crest Height:</span>
+                            <span id="stat-barrier-height" class="mono-val">2.80 m</span>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Barrier Actions -->
+                    <div class="barrier-actions-grid">
+                        <button id="btn-undo-barrier" class="btn-sub">↺ Undo Last</button>
+                        <button id="btn-clear-barriers" class="btn-sub danger">Clear All</button>
                     </div>
                 </div>
             </aside>
@@ -264,16 +408,21 @@
 
             <!-- Floating Sleek Pill Playback Bar (Matches User Reference Image 4) -->
             <footer id="bottom-playback-bar" class="floating-pill-bar">
-                <!-- Circular White Play Button with Dark Icon -->
-                <button id="btn-play-pause" class="btn-play-circle-white" title="Play / Pause Simulation">
-                    <svg id="icon-play" class="hidden" viewBox="0 0 24 24" width="16" height="16" fill="#0b111a">
-                        <polygon points="6 4 20 12 6 20 6 4"/>
-                    </svg>
-                    <svg id="icon-pause" viewBox="0 0 24 24" width="16" height="16" fill="#0b111a">
-                        <rect x="6" y="4" width="4" height="16"/>
-                        <rect x="14" y="4" width="4" height="16"/>
-                    </svg>
-                </button>
+                <!-- Play Button & Embedded Reset Button inside Bottom Bar -->
+                <div class="play-reset-cluster">
+                    <button id="btn-play-pause" class="btn-play-circle-white" title="Play / Pause Simulation">
+                        <svg id="icon-play" class="hidden" viewBox="0 0 24 24" width="16" height="16" fill="#0b111a">
+                            <polygon points="6 4 20 12 6 20 6 4"/>
+                        </svg>
+                        <svg id="icon-pause" viewBox="0 0 24 24" width="16" height="16" fill="#0b111a">
+                            <rect x="6" y="4" width="4" height="16"/>
+                            <rect x="14" y="4" width="4" height="16"/>
+                        </svg>
+                    </button>
+                    <button id="btn-bar-reset" class="btn-bar-reset" title="Reset Simulation">
+                        ↺ Reset
+                    </button>
+                </div>
 
                 <!-- Digital Time Readout: 00:00 / of 06:00 simulated -->
                 <div class="time-readout-box">

@@ -87,16 +87,14 @@ export function createWaterMesh(meta, terrainGeometry, simulator) {
         vec3 pos = position;
         
         // Physical water surface elevation:
-        // When wet (h > 0.01), lift the water vertex smoothly by depth * 1.2 + small clearance
-        // When dry (h <= 0.01), drop below ground so it never z-fights
-        if (h > 0.01) {
-            pos.y += h * 1.2 + 0.12;
-            
+        // Smooth continuous lift without geometric cliff tearing or glitches
+        float lift = smoothstep(0.005, 0.05, h) * (h * 1.2 + 0.08);
+        pos.y += lift;
+        
+        if (h > 0.03) {
             // Soft gentle surface wave
-            float wave = sin(position.x * 0.015 + u_time * 0.9) * cos(position.z * 0.015 - u_time * 0.7) * 0.04;
+            float wave = sin(position.x * 0.015 + u_time * 0.9) * cos(position.z * 0.015 - u_time * 0.7) * 0.03;
             pos.y += wave;
-        } else {
-            pos.y -= 3.0;
         }
         
         vec4 worldPos = modelMatrix * vec4(pos, 1.0);
@@ -109,6 +107,7 @@ export function createWaterMesh(meta, terrainGeometry, simulator) {
     
     const waterFragmentShader = `
     uniform sampler2D u_waterTex;      // R: h, G: qx, B: qy, A: peak_h
+    uniform sampler2D u_elevTex;       // R: zb, G: bldg_mask, B: river_mask
     uniform vec2 u_resolution;
     uniform float u_time;
     uniform vec3 u_lightPos;
@@ -139,46 +138,43 @@ export function createWaterMesh(meta, terrainGeometry, simulator) {
         float h = water.r;
         
         // Soft boundary discard
-        if (h < 0.008) {
+        if (h < 0.010) {
             discard;
         }
         
-        // Multi-tier water color matching User Reference Images 2 & 3:
-        // Deep River Suir channel: rich royal sapphire blue (#0d3ca6 / #1d4ed8)
-        // River bank overtopping / overflow crest: vibrant fiery amber-orange band (#f97316 / #ea580c)
-        // Spreading flood plain & street inundation: bright cyan-azure sky blue (#38bdf8 / #0284c7)
-        vec3 colorDeep    = vec3(0.06, 0.28, 0.85); // deep royal blue
-        vec3 colorSpill   = vec3(0.96, 0.44, 0.08); // vibrant fiery amber-orange overtopping band
-        vec3 colorShallow = vec3(0.18, 0.68, 0.98); // bright cyan-azure flood plain
+        vec4 elev = sampleSmooth(u_elevTex, vUv);
+        float isRiver = elev.b; // 1.0 inside River Suir bed, 0.0 on flood plains / streets
         
-        vec3 waterColor;
-        if (h < 0.70) {
-            // Shallow flood waters rushing into town streets and quayside
-            waterColor = colorShallow;
-        } else if (h < 1.90) {
-            // Overtopping transition band where river climbs and overflows the quays
-            float t = smoothstep(0.70, 1.30, h);
-            waterColor = mix(colorShallow, colorSpill, t);
-        } else if (h < 2.60) {
-            // Transition from overtopping crest down into deep river channel
-            float t = smoothstep(1.90, 2.50, h);
-            waterColor = mix(colorSpill, colorDeep, t);
-        } else {
-            // Main deep Suir river channel
-            waterColor = colorDeep;
-        }
+        // 1. Natural River Suir Channel: Pure, silky, vibrant royal sapphire-azure blue (ZERO glitch, zero orange in river)
+        vec3 suirDeep = vec3(0.04, 0.22, 0.82); // deep royal sapphire blue
+        vec3 suirMid  = vec3(0.12, 0.48, 0.96); // vibrant azure blue
+        vec3 suirBlue = mix(suirMid, suirDeep, smoothstep(0.30, 2.20, h));
+        
+        // 2. Overland Flooding (When water overflows out of the river into town streets/quays)
+        // Flooded overflow regions display the requested orangish-yellow warning tone in the flood area
+        vec3 floodOrangeYellow = vec3(0.96, 0.58, 0.08); // warm orangish-yellow for flood spill
+        vec3 rainSpreadBlue    = vec3(0.14, 0.52, 0.94); // pure silky blue for rain spread
+        
+        // When water overflows onto dry ground / streets (isRiver < 0.35):
+        // If flood is severe (spilling over quays, h > 0.20), tint to orangish-yellow flood warning
+        // If rain spread (h <= 0.20), keep pure silky blue
+        vec3 overlandColor = mix(rainSpreadBlue, floodOrangeYellow, smoothstep(0.12, 0.38, h));
+        
+        // Inside the River Suir: 100% pure royal blue!
+        // Outside the river in flooded streets: overland flood color!
+        vec3 waterColor = mix(overlandColor, suirBlue, smoothstep(0.20, 0.65, isRiver));
         
         // Kinetic flow streamlines along river Suir
         vec2 q = water.gb;
         float speed = length(q) / max(0.05, h);
-        float streamPattern = sin((vWorldPosition.x * 0.06 - vWorldPosition.z * 0.03) + u_time * (1.2 + speed * 0.5));
-        float streamGlint = smoothstep(0.4, 0.95, streamPattern) * min(0.18, speed * 0.12);
+        float streamPattern = sin((vWorldPosition.x * 0.05 - vWorldPosition.z * 0.025) + u_time * (1.2 + speed * 0.4));
+        float streamGlint = smoothstep(0.45, 0.95, streamPattern) * min(0.12, speed * 0.08);
         waterColor += vec3(streamGlint);
         
         // Gentle, calm, low-frequency wave normal perturbation
         float w1 = sin(vWorldPosition.x * 0.018 + u_time * 0.8) * cos(vWorldPosition.z * 0.018 - u_time * 0.6);
         float w2 = sin(vWorldPosition.x * 0.035 - vWorldPosition.z * 0.030 + u_time * 1.1);
-        float ripple = (w1 * 0.6 + w2 * 0.4) * 0.05;
+        float ripple = (w1 * 0.6 + w2 * 0.4) * 0.04;
         
         vec3 N = normalize(vNormal + vec3(ripple, 1.0, ripple));
         vec3 L = normalize(u_lightPos - vWorldPosition);
@@ -189,15 +185,15 @@ export function createWaterMesh(meta, terrainGeometry, simulator) {
         float NdotL = max(0.0, dot(N, L));
         
         // Soft subtle specular highlight (silky water surface glisten)
-        float spec = pow(max(0.0, dot(N, H)), 48.0) * 0.38;
+        float spec = pow(max(0.0, dot(N, H)), 48.0) * 0.35;
         
         // Gentle Fresnel rim glint
-        float fresnel = pow(1.0 - max(0.0, dot(V, N)), 2.5) * 0.20;
+        float fresnel = pow(1.0 - max(0.0, dot(V, N)), 2.5) * 0.18;
         
         // Feathered alpha edge: smoothly blends into terrain without any jagged stair-steps
-        float alpha = smoothstep(0.008, 0.06, h) * 0.95;
+        float alpha = smoothstep(0.010, 0.06, h) * 0.94;
         
-        vec3 finalColor = waterColor * (0.80 + 0.20 * NdotL) + vec3(spec + fresnel);
+        vec3 finalColor = waterColor * (0.82 + 0.18 * NdotL) + vec3(spec + fresnel);
         
         gl_FragColor = vec4(finalColor, alpha);
     }
@@ -210,6 +206,7 @@ export function createWaterMesh(meta, terrainGeometry, simulator) {
         fragmentShader: waterFragmentShader,
         uniforms: {
             u_waterTex: { value: simulator.getWaterTexture() },
+            u_elevTex: { value: simulator.elevTexture },
             u_resolution: { value: new THREE.Vector2(meta.grid_w, meta.grid_h) },
             u_time: { value: 0.0 },
             u_lightPos: { value: new THREE.Vector3(800, 1500, 600) }

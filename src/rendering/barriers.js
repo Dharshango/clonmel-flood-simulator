@@ -104,6 +104,40 @@ export function createBarriersManager(scene, meta, simulator, elevArray) {
         }
     }
     
+    function undoLast() {
+        if (barrierList.length === 0) return;
+        const last = barrierList.pop();
+        for (let m of last.meshes) {
+            barrierGroup.remove(m);
+            if (m.geometry) m.geometry.dispose();
+        }
+        
+        // Re-rasterize remaining barriers into simulator
+        simulator.clearBarriers();
+        for (let b of barrierList) {
+            const isWall = b.type === 'wall';
+            for (let i = 0; i < b.pointsLonLat.length - 1; i++) {
+                const p0 = b.pointsLonLat[i];
+                const p1 = b.pointsLonLat[i + 1];
+                const g0 = lonlatToGrid(p0[0], p0[1]);
+                const g1 = lonlatToGrid(p1[0], p1[1]);
+                simulator.setBarrierSegment(g0.gx, g0.gy, g1.gx, g1.gy, b.height, isWall ? 2 : 3);
+            }
+        }
+    }
+
+    function getTotalLength() {
+        let total = 0;
+        for (let b of barrierList) {
+            for (let i = 0; i < b.pointsLonLat.length - 1; i++) {
+                const w0 = lonlatToWorld(b.pointsLonLat[i][0], b.pointsLonLat[i][1]);
+                const w1 = lonlatToWorld(b.pointsLonLat[i + 1][0], b.pointsLonLat[i + 1][1]);
+                total += w0.distanceTo(w1);
+            }
+        }
+        return Math.round(total);
+    }
+    
     function clearAll() {
         while (barrierGroup.children.length > 0) {
             const obj = barrierGroup.children[0];
@@ -118,6 +152,8 @@ export function createBarriersManager(scene, meta, simulator, elevArray) {
         group: barrierGroup,
         barriers: barrierList,
         addBarrierPolyline,
+        undoLast,
+        getTotalLength,
         loadPresets,
         clearAll,
         lonlatToWorld,

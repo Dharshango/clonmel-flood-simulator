@@ -131,15 +131,41 @@ async function init() {
     let currentScenario = 'flood100';
     let tweenCamera = null;
     let cameraVantageIndex = 0;
+    let activeBarrierTool = 'wall';
+    let pendingBarrierPoint = null;
     
-    // UI Elements
+    // UI Elements - Hero Section
+    const heroSection = document.getElementById('hero-section');
+    const btnHeroLaunch = document.getElementById('btn-hero-launch');
+    const btnBackHero = document.getElementById('btn-back-hero');
+    
+    if (btnHeroLaunch && heroSection) {
+        btnHeroLaunch.addEventListener('click', () => {
+            heroSection.classList.add('hidden');
+        });
+    }
+    if (btnBackHero && heroSection) {
+        btnBackHero.addEventListener('click', () => {
+            heroSection.classList.remove('hidden');
+        });
+    }
+    
+    // Top Tabs & Panels
     const tabLive = document.getElementById('tab-live');
     const tabBarrier = document.getElementById('tab-barrier');
     const tabCompare = document.getElementById('tab-compare');
+    const scenarioControlsView = document.getElementById('scenario-controls-view');
+    const barrierStudioView = document.getElementById('barrier-studio-view');
     const sideBySideOverlay = document.getElementById('side-by-side-overlay');
-    const sbsLeftStat = document.getElementById('sbs-left-stat');
-    const sbsRightStat = document.getElementById('sbs-right-stat');
     
+    // Side-by-Side Comparison Readouts (Unprotected Baseline vs Protected)
+    const sbsUnmitFlooded = document.getElementById('sbs-unmit-flooded');
+    const sbsUnmitRoads = document.getElementById('sbs-unmit-roads');
+    const sbsUnmitDepth = document.getElementById('sbs-unmit-depth');
+    const sbsSavedBldgs = document.getElementById('sbs-saved-bldgs');
+    const sbsProtectRate = document.getElementById('sbs-protect-rate');
+    
+    // Scenario Controls
     const activeScenarioTag = document.getElementById('active-scenario-tag');
     const sliderInflow = document.getElementById('slider-inflow');
     const valInflow = document.getElementById('val-inflow');
@@ -148,11 +174,17 @@ async function init() {
     const sliderSurge = document.getElementById('slider-surge');
     const valSurge = document.getElementById('val-surge');
     
-    const btnToggleWall = document.getElementById('btn-toggle-wall');
+    // Barrier Defense Studio Elements
+    const btnToolWall = document.getElementById('btn-tool-wall');
+    const btnToolSandbags = document.getElementById('btn-tool-sandbags');
+    const btnToolPreset = document.getElementById('btn-tool-preset');
+    const statBarrierLength = document.getElementById('stat-barrier-length');
+    const statBarrierHeight = document.getElementById('stat-barrier-height');
+    const btnUndoBarrier = document.getElementById('btn-undo-barrier');
     const btnClearBarriers = document.getElementById('btn-clear-barriers');
     const barrierStatusText = document.getElementById('barrier-status-text');
     
-    // Readouts
+    // Readouts (Right Panel)
     const readoutStreet = document.getElementById('readout-street');
     const readoutDepthVal = document.getElementById('readout-depth-val');
     const readoutHazardTag = document.getElementById('readout-hazard-tag');
@@ -176,6 +208,7 @@ async function init() {
     
     // Bottom Bar (Reference Image 4)
     const btnPlayPause = document.getElementById('btn-play-pause');
+    const btnBarReset = document.getElementById('btn-bar-reset');
     const iconPlay = document.getElementById('icon-play');
     const iconPause = document.getElementById('icon-pause');
     const floodClockText = document.getElementById('flood-clock-text');
@@ -196,22 +229,33 @@ async function init() {
     // Mode Navigation: Live, Barrier, Compare
     function setMode(mode) {
         activeMode = mode;
+        pendingBarrierPoint = null;
         tabLive.classList.toggle('active', mode === 'live');
         tabBarrier.classList.toggle('active', mode === 'barrier');
         tabCompare.classList.toggle('active', mode === 'compare');
         
         if (mode === 'live') {
             isSideBySide = false;
+            scenarioControlsView.classList.remove('hidden');
+            barrierStudioView.classList.add('hidden');
             sideBySideOverlay.classList.add('hidden');
         } else if (mode === 'barrier') {
             isSideBySide = false;
+            scenarioControlsView.classList.add('hidden');
+            barrierStudioView.classList.remove('hidden');
             sideBySideOverlay.classList.add('hidden');
-            barriersManager.loadPresets(presetsResp);
+            if (barriersManager.barriers.length === 0) {
+                barriersManager.loadPresets(presetsResp);
+            }
             updateBarrierUI();
         } else if (mode === 'compare') {
             isSideBySide = true;
+            scenarioControlsView.classList.remove('hidden');
+            barrierStudioView.classList.add('hidden');
             sideBySideOverlay.classList.remove('hidden');
-            barriersManager.loadPresets(presetsResp);
+            if (barriersManager.barriers.length === 0) {
+                barriersManager.loadPresets(presetsResp);
+            }
             updateBarrierUI();
         }
     }
@@ -221,28 +265,69 @@ async function init() {
     tabCompare.addEventListener('click', () => setMode('compare'));
     
     function updateBarrierUI() {
-        const hasBarriers = (barriersManager.activeBarriers && barriersManager.activeBarriers.length > 0);
-        if (hasBarriers) {
-            barrierStatusText.className = 'status-pill-green';
-            barrierStatusText.textContent = 'ACTIVE';
-        } else {
-            barrierStatusText.className = 'status-pill-green';
-            barrierStatusText.style.background = 'rgba(239, 68, 68, 0.2)';
-            barrierStatusText.style.color = '#f87171';
-            barrierStatusText.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-            barrierStatusText.textContent = 'NONE';
+        const count = barriersManager.barriers.length;
+        const totalLen = barriersManager.getTotalLength();
+        if (statBarrierLength) {
+            statBarrierLength.textContent = `${totalLen.toLocaleString()} m`;
+        }
+        if (barrierStatusText) {
+            if (count > 0) {
+                barrierStatusText.className = 'status-pill-green';
+                barrierStatusText.style.background = 'rgba(16, 185, 129, 0.2)';
+                barrierStatusText.style.color = '#34d399';
+                barrierStatusText.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                barrierStatusText.textContent = `${count} BARRIER${count > 1 ? 'S' : ''}`;
+            } else {
+                barrierStatusText.className = 'status-pill-green';
+                barrierStatusText.style.background = 'rgba(239, 68, 68, 0.2)';
+                barrierStatusText.style.color = '#f87171';
+                barrierStatusText.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                barrierStatusText.textContent = 'NONE';
+            }
         }
     }
     
-    btnToggleWall.addEventListener('click', () => {
-        barriersManager.loadPresets(presetsResp);
-        updateBarrierUI();
-    });
+    // Barrier Defense Studio Tool Selection
+    function selectBarrierTool(tool) {
+        activeBarrierTool = tool;
+        pendingBarrierPoint = null;
+        [btnToolWall, btnToolSandbags, btnToolPreset].forEach(b => {
+            if (b) b.classList.toggle('active', b.dataset.tool === tool);
+        });
+        
+        if (tool === 'wall') {
+            if (statBarrierHeight) statBarrierHeight.textContent = '2.80 m';
+        } else if (tool === 'sandbags') {
+            if (statBarrierHeight) statBarrierHeight.textContent = '1.20 m';
+        } else if (tool === 'preset') {
+            barriersManager.loadPresets(presetsResp);
+            if (statBarrierHeight) statBarrierHeight.textContent = '2.80 m';
+            updateBarrierUI();
+        }
+    }
     
-    btnClearBarriers.addEventListener('click', () => {
-        barriersManager.clearAll();
-        updateBarrierUI();
-    });
+    if (btnToolWall) btnToolWall.addEventListener('click', () => selectBarrierTool('wall'));
+    if (btnToolSandbags) btnToolSandbags.addEventListener('click', () => selectBarrierTool('sandbags'));
+    if (btnToolPreset) btnToolPreset.addEventListener('click', () => selectBarrierTool('preset'));
+    
+    if (btnUndoBarrier) {
+        btnUndoBarrier.addEventListener('click', () => {
+            barriersManager.undoLast();
+            pendingBarrierPoint = null;
+            updateBarrierUI();
+        });
+    }
+    
+    if (btnClearBarriers) {
+        btnClearBarriers.addEventListener('click', () => {
+            barriersManager.clearAll();
+            pendingBarrierPoint = null;
+            updateBarrierUI();
+        });
+    }
+    
+    // Initialize initial barrier metrics
+    updateBarrierUI();
     
     // Scenario Selection
     function applyScenario(type) {
@@ -317,14 +402,17 @@ async function init() {
     function resetSimulation() {
         simulator.reset();
         baselineSimulator.reset();
-        barriersManager.loadPresets(presetsResp);
         inspector.hide();
+        pendingBarrierPoint = null;
         updateBarrierUI();
         if (timelineProgressFill) timelineProgressFill.style.width = '0%';
         if (scrubberKnob) scrubberKnob.style.left = '0%';
         if (floodClockText) floodClockText.textContent = '00:00';
     }
     
+    if (btnBarReset) {
+        btnBarReset.addEventListener('click', resetSimulation);
+    }
     if (btnQuickReset) {
         btnQuickReset.addEventListener('click', resetSimulation);
     }
@@ -454,13 +542,54 @@ async function init() {
         }
     }
     
-    // Click for Depth Inspection
+    // Click for Depth Inspection & Interactive Barrier Placement
     canvas.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
+        
+        // If in Barrier mode and drawing tool is active (wall or sandbags)
+        if (activeMode === 'barrier' && (activeBarrierTool === 'wall' || activeBarrierTool === 'sandbags')) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), camera);
+            const intersects = raycaster.intersectObject(terrainMesh);
+            
+            if (intersects.length > 0) {
+                const pt = intersects[0].point;
+                // Convert world (pt.x, pt.z) to lon, lat
+                const u = (pt.x / meta.width_m) + 0.5;
+                const v = -(pt.z / meta.height_m) + 0.5;
+                const lon = meta.bbox.west + u * (meta.bbox.east - meta.bbox.west);
+                const lat = meta.bbox.south + v * (meta.bbox.north - meta.bbox.south);
+                
+                if (!pendingBarrierPoint) {
+                    pendingBarrierPoint = [lon, lat];
+                } else {
+                    const height = activeBarrierTool === 'wall' ? 2.8 : 1.2;
+                    const toolName = activeBarrierTool === 'wall' ? 'Demountable Wall' : 'Sandbag Bund';
+                    barriersManager.addBarrierPolyline([pendingBarrierPoint, [lon, lat]], activeBarrierTool, height, toolName);
+                    pendingBarrierPoint = [lon, lat];
+                    updateBarrierUI();
+                }
+                return;
+            }
+        }
+        
+        // Default: Click for Depth Inspection
         const hit = inspector.inspectAt(e, canvas);
         if (hit) {
             selectedInspectUV = { u: hit.u, v: hit.v, street: hit.street, lon: hit.lon, lat: hit.lat };
             readoutCoords.textContent = `${hit.lat.toFixed(4)}°N, ${Math.abs(hit.lon).toFixed(4)}°W`;
+        }
+    });
+
+    // Right click cancels ongoing drawing polyline
+    canvas.addEventListener('contextmenu', (e) => {
+        if (activeMode === 'barrier') {
+            e.preventDefault();
+            pendingBarrierPoint = null;
         }
     });
     
@@ -595,10 +724,17 @@ async function init() {
             const sampleQuay = simulator.samplePoint(0.53, 0.44);
             statPeakDepth.textContent = `${sampleQuay.peak_h.toFixed(2)} m`;
             
-            // Side-by-Side overlay stats
+            // Side-by-Side overlay stats: Rigorous comparison between Unmitigated Baseline and Protected
             if (isSideBySide) {
-                sbsLeftStat.textContent = `Flooded: ${unmitigatedNow} Buildings`;
-                sbsRightStat.textContent = `Saved: ${savedNow} (${((savedNow / Math.max(1, unmitigatedNow)) * 100).toFixed(1)}% Safe)`;
+                if (sbsUnmitFlooded) sbsUnmitFlooded.textContent = unmitigatedNow.toLocaleString();
+                if (sbsUnmitRoads) sbsUnmitRoads.textContent = `${roadStats.cutoffCount} roads`;
+                if (sbsUnmitDepth) sbsUnmitDepth.textContent = `${sampleQuay.peak_h.toFixed(2)} m`;
+                
+                if (sbsSavedBldgs) sbsSavedBldgs.textContent = savedNow.toLocaleString();
+                if (sbsProtectRate) {
+                    const rate = unmitigatedNow > 0 ? ((savedNow / Math.max(1, unmitigatedNow)) * 100).toFixed(1) : '100.0';
+                    sbsProtectRate.textContent = `${rate}% Protected`;
+                }
             }
             
             // Flood Clock & Scrubber (Matches User Reference Image 4: 00:00 of 06:00 simulated)
