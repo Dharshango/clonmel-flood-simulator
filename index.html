@@ -3,66 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SUIRVIEW // CLONMEL FLOOD SIMULATOR</title>
+    <title>Free Board // Clonmel, River Suir</title>
     <link rel="stylesheet" href="/src/style.css">
-    <!-- Google Fonts Inter -->
+    <!-- Google Fonts Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="app">
-        <!-- Top Navigation Header -->
+        <!-- Top Navigation Bar -->
         <header id="top-nav">
+            <!-- Left Branding: Free Board, Clonmel, River Suir -->
             <div class="brand">
-                <div class="pulse-indicator"></div>
-                <div class="brand-text">
-                    <div class="brand-title">
-                        <span class="brand-name">SUIRVIEW</span>
-                        <span class="brand-sep">//</span>
-                        <span class="brand-subname">CLONMEL FLOOD SIMULATOR</span>
-                        <span class="badge-dim">RIVER SUIR 3.0×2.0 KM</span>
-                    </div>
-                    <div class="brand-geo">
-                        52.3538°N, 7.7036°W • AWS Terrarium DEM + OpenStreetMap Buildings • Saint-Venant 2D GPU SWE
-                    </div>
+                <div class="brand-logo">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12h20M2 17h20M2 7h20"/>
+                        <circle cx="8" cy="12" r="2.5" fill="#38bdf8"/>
+                    </svg>
+                </div>
+                <div class="brand-headings">
+                    <h1 class="brand-title">Free Board</h1>
+                    <span class="brand-sub">Clonmel, River Suir</span>
                 </div>
             </div>
             
-            <div class="header-center-tabs">
-                <button id="btn-tab-twin" class="nav-tab active">
-                    <span class="tab-icon">🌐</span> 3D Digital Twin
+            <!-- Center Tabs: ONLY 3 Options (Live, Barrier, Compare) -->
+            <nav class="header-modes" aria-label="Simulation Modes">
+                <button id="tab-live" class="mode-tab active" title="Live shallow water flood simulation">
+                    Live
                 </button>
-                <button id="btn-side-by-side" class="nav-tab">
-                    <span class="tab-icon">◫</span> Side-by-Side Replay
+                <button id="tab-barrier" class="mode-tab" title="Deploy demountable quay wall flood barriers">
+                    Barrier
                 </button>
-                <button id="btn-osm-compare" class="nav-tab">
-                    <span class="tab-icon">🗺️</span> OSM Map Compare
+                <button id="tab-compare" class="mode-tab" title="Side-by-side comparison replay: unprotected vs protected">
+                    Compare
                 </button>
-                <button id="btn-proof" class="nav-tab">
-                    <span class="tab-icon">📊</span> Dam-Break & Mass Proof
-                </button>
-            </div>
+            </nav>
             
-            <div class="header-status-badges">
-                <div class="status-pill fps-pill">
-                    <span class="status-dot green"></span>
+            <!-- Right Meta Badges & Quick Links -->
+            <div class="header-right">
+                <div class="badge-status">
+                    <span class="pulse-dot"></span>
                     <span id="fps-counter">60 FPS</span>
                 </div>
-                <div class="status-pill grid-pill">
-                    Grid: 600×400 (5.5m)
-                </div>
-                <div class="status-pill mass-pill">
-                    ΔV: <span id="val-mass-error-top">0.0000%</span> (&lt;1%)
-                </div>
+                <a href="https://github.com/Dharshango/clonmel-flood-simulator" target="_blank" rel="noopener noreferrer" class="nav-icon-link" title="View Source on GitHub">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                    </svg>
+                </a>
+                <a href="https://vercel.com/new/clone?repository-url=https://github.com/Dharshango/clonmel-flood-simulator" target="_blank" rel="noopener noreferrer" class="nav-icon-link vercel" title="Deploy on Vercel">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                        <path d="M12 1L24 22H0L12 1z"/>
+                    </svg>
+                </a>
             </div>
         </header>
 
-        <!-- Main Viewport Container -->
+        <!-- Main 3D Viewport -->
         <main id="viewport-container">
-            <!-- 3D Canvas -->
             <canvas id="three-canvas"></canvas>
-            
+
             <!-- Floating In-Scene Landmark Labels -->
             <div id="world-labels-container">
                 <div class="world-label" id="label-gashouse" data-lon="-7.6930" data-lat="52.3528">
@@ -102,355 +103,259 @@
                 </div>
             </div>
 
-            <!-- Side-by-Side Replay Split Overlay -->
+            <!-- Side-by-Side Compare Split Overlay -->
             <div id="side-by-side-overlay" class="hidden">
                 <div class="sbs-label left-label">
                     <span class="tag danger">WITHOUT BARRIER (BASELINE FLOOD)</span>
-                    <span id="sbs-left-stat">Flooded: 842 Buildings</span>
+                    <span id="sbs-left-stat">Flooded: 0 Buildings</span>
                 </div>
                 <div class="sbs-label right-label">
                     <span class="tag success">WITH QUAY BARRIER (PROTECTED)</span>
-                    <span id="sbs-right-stat">Saved: 814 Buildings (96.7% Safe)</span>
+                    <span id="sbs-right-stat">Saved: 0 Buildings (100% Safe)</span>
                 </div>
                 <div class="sbs-divider"></div>
             </div>
 
-            <!-- Left Controls Sidebar -->
-            <aside id="controls-panel" class="floating-panel left-panel">
-                <!-- 1. Flood Scenarios & Sliders -->
-                <div class="panel-section">
-                    <div class="section-title">
-                        <span>1. FLOOD SCENARIOS & SLIDERS</span>
-                        <span id="scenario-sub-badge" class="badge-mini">100-Yr Surge</span>
+            <!-- Left Panel: Scenario Controls -->
+            <aside id="controls-panel" class="clean-panel left-panel">
+                <div class="panel-header">
+                    <span class="panel-title">SCENARIO CONTROLS</span>
+                    <span id="active-scenario-tag" class="pill-tag">1-in-100-Yr Flood</span>
+                </div>
+
+                <!-- Scenario Selection Buttons -->
+                <div class="scenario-buttons-stack">
+                    <button class="scenario-btn" data-scenario="normal">
+                        <div class="s-dot blue"></div>
+                        <div class="s-info">
+                            <span class="s-name">Normal River Flow</span>
+                            <span class="s-val">55 m³/s • Channel baseline</span>
+                        </div>
+                    </button>
+
+                    <button class="scenario-btn active" data-scenario="flood100">
+                        <div class="s-dot red"></div>
+                        <div class="s-info">
+                            <span class="s-name">1-in-100-Yr Flood</span>
+                            <span class="s-val">450 m³/s • Overtopping quays</span>
+                        </div>
+                    </button>
+
+                    <button class="scenario-btn" data-scenario="surge">
+                        <div class="s-dot amber"></div>
+                        <div class="s-info">
+                            <span class="s-name">Storm Surge & Rain</span>
+                            <span class="s-val">400 m³/s + 50 mm/h rain</span>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Parameter Sliders -->
+                <div class="sliders-stack">
+                    <div class="slider-field">
+                        <div class="slider-labels">
+                            <span>River Suir Inflow</span>
+                            <span id="val-inflow" class="mono-val">450 m³/s</span>
+                        </div>
+                        <input type="range" id="slider-inflow" min="20" max="650" step="10" value="450">
                     </div>
-                    <div class="scenario-cards-grid">
-                        <div class="scenario-card" data-scenario="normal">
-                            <div class="card-thumb">
-                                <img src="/thumbnails/normal_flow.svg" alt="Normal Flow">
-                            </div>
-                            <div class="card-info">
-                                <span class="card-title">Normal Flow</span>
-                                <span class="card-desc">55 m³/s Base</span>
-                            </div>
+
+                    <div class="slider-field">
+                        <div class="slider-labels">
+                            <span>Heavy Rainfall</span>
+                            <span id="val-rain" class="mono-val">0 mm/h</span>
                         </div>
-                        <div class="scenario-card" data-scenario="rain">
-                            <div class="card-thumb">
-                                <img src="/thumbnails/heavy_rain.svg" alt="Heavy Rain">
-                            </div>
-                            <div class="card-info">
-                                <span class="card-title">Heavy Rain</span>
-                                <span class="card-desc">1-in-20 Yr</span>
-                            </div>
-                        </div>
-                        <div class="scenario-card active" data-scenario="flood100">
-                            <div class="card-thumb">
-                                <img src="/thumbnails/surge_flood.svg" alt="100-Yr Surge">
-                            </div>
-                            <div class="card-info">
-                                <span class="card-title">100-Yr Surge</span>
-                                <span class="card-desc">450 m³/s Peak</span>
-                            </div>
-                        </div>
+                        <input type="range" id="slider-rain" min="0" max="80" step="5" value="0">
                     </div>
 
-                    <!-- Hydraulic Sliders -->
-                    <div class="sliders-container">
-                        <div class="slider-group">
-                            <div class="slider-header">
-                                <span>River Suir Flow:</span>
-                                <span id="val-inflow" class="slider-val">450 m³/s</span>
-                            </div>
-                            <input type="range" id="slider-inflow" min="20" max="650" step="10" value="450">
+                    <div class="slider-field">
+                        <div class="slider-labels">
+                            <span>Downstream Surge</span>
+                            <span id="val-surge" class="mono-val">+0.00 m</span>
                         </div>
-
-                        <div class="slider-group">
-                            <div class="slider-header">
-                                <span>Heavy Rainfall Rate:</span>
-                                <span id="val-rain" class="slider-val">0 mm/hr</span>
-                            </div>
-                            <input type="range" id="slider-rain" min="0" max="80" step="5" value="0">
-                        </div>
-
-                        <div class="slider-group-row">
-                            <div class="slider-group half">
-                                <div class="slider-header">
-                                    <span>Rain Duration:</span>
-                                    <span id="val-duration" class="slider-val">6 hrs</span>
-                                </div>
-                                <input type="range" id="slider-duration" min="1" max="24" step="1" value="6">
-                            </div>
-
-                            <div class="slider-group half">
-                                <div class="slider-header">
-                                    <span>Downstream Surge:</span>
-                                    <span id="val-surge" class="slider-val">+0.00 m</span>
-                                </div>
-                                <input type="range" id="slider-surge" min="-0.5" max="3.0" step="0.05" value="0.00">
-                            </div>
-                        </div>
+                        <input type="range" id="slider-surge" min="-0.5" max="3.0" step="0.05" value="0.00">
                     </div>
                 </div>
 
-                <!-- 2. Quay Flood Barriers -->
-                <div class="panel-section">
-                    <div class="section-title">
-                        <span>2. QUAY FLOOD BARRIERS</span>
-                        <span id="barrier-status-badge" class="badge-mini success">PROTECTED</span>
+                <!-- Flood Barrier Controls -->
+                <div class="barrier-control-box">
+                    <div class="barrier-title-row">
+                        <span>Quay Flood Barrier</span>
+                        <span id="barrier-status-text" class="status-pill-green">ACTIVE</span>
                     </div>
-                    <div class="barrier-cards-grid">
-                        <div class="barrier-card active" id="card-barrier-wall">
-                            <div class="card-thumb">
-                                <img src="/thumbnails/quay_wall.svg" alt="Demountable Quay Wall">
-                            </div>
-                            <div class="card-info">
-                                <span class="card-title">Deploy Quay Wall</span>
-                                <span class="card-desc">+2.8m Demountable</span>
-                            </div>
-                        </div>
-                        <div class="barrier-card" id="card-barrier-sandbags">
-                            <div class="card-thumb">
-                                <img src="/thumbnails/sandbags.svg" alt="Sandbags">
-                            </div>
-                            <div class="card-info">
-                                <span class="card-title">Deploy Sandbags</span>
-                                <span class="card-desc">+1.1m Temporary Line</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="barrier-action-buttons">
-                        <button id="btn-draw-wall" class="btn btn-action">Draw Wall 3D</button>
-                        <button id="btn-draw-sandbags" class="btn btn-action">Draw Sandbags</button>
-                        <button id="btn-clear-barriers" class="btn btn-action danger">✕ Clear</button>
-                    </div>
-                    <div id="draw-instruction" class="draw-instruction hidden">
-                        Click & drag along the quay in 3D to place barrier.
-                    </div>
-                </div>
-
-                <!-- 3. Clonmel Camera Vantages -->
-                <div class="panel-section">
-                    <div class="section-title">
-                        <span>3. CLONMEL CAMERA VANTAGES</span>
-                    </div>
-                    <div class="camera-vantages-grid">
-                        <button class="btn btn-vantage active" data-vantage="overview">
-                            Suir Corridor Overview
-                        </button>
-                        <button class="btn btn-vantage" data-vantage="bridge">
-                            Old Bridge & The Quay
-                        </button>
-                        <button class="btn btn-vantage" data-vantage="centre">
-                            Sarsfield St Centre
-                        </button>
-                        <button class="btn btn-vantage" data-vantage="topdown">
-                            Top-Down Ordnance
-                        </button>
+                    <div class="barrier-buttons-row">
+                        <button id="btn-toggle-wall" class="btn-sub primary">Deploy Quay Wall (2.8m)</button>
+                        <button id="btn-clear-barriers" class="btn-sub danger">Remove</button>
                     </div>
                 </div>
             </aside>
 
-            <!-- Right Impact & Readouts Panel -->
-            <aside id="analytics-panel" class="floating-panel right-panel">
-                <!-- Click-For-Depth Gauge -->
-                <div class="panel-section">
-                    <div class="section-title">
-                        <span>CLICK-FOR-DEPTH GAUGE</span>
-                        <span id="inspect-coords" class="coords-mono">52.3553°N, 7.7063°W</span>
+            <!-- Right Panel: Readouts -->
+            <aside id="readouts-panel" class="clean-panel right-panel">
+                <div class="panel-header">
+                    <span class="panel-title">READOUTS</span>
+                    <span id="readout-coords" class="coords-tag">52.3553°N, 7.7063°W</span>
+                </div>
+
+                <!-- Click-For-Depth Card -->
+                <div class="readout-card depth-card">
+                    <div class="depth-card-header">
+                        <span id="readout-street" class="street-name">Quay Street</span>
+                        <span class="depth-subtitle">Live Water Depth</span>
                     </div>
-                    <div class="gauge-card">
-                        <div class="gauge-location-row">
-                            <div id="gauge-street" class="gauge-street">Bolton Street</div>
-                            <div class="gauge-meta">
-                                Ground: <span id="gauge-elev">23.48 m</span> OD • Flow: <span id="gauge-flow">0.00 m/s</span>
-                            </div>
-                        </div>
-                        <div class="gauge-live-depth">
-                            <span class="label">LIVE DEPTH</span>
-                            <span id="gauge-depth-val" class="depth-number">0.00 m</span>
-                        </div>
-                        <div class="gauge-three-boxes">
-                            <div class="box">
-                                <span class="b-lbl">Without Wall</span>
-                                <span id="gauge-without-wall" class="b-val">0.00 m</span>
-                            </div>
-                            <div class="box">
-                                <span class="b-lbl">With Wall</span>
-                                <span id="gauge-with-wall" class="b-val">0.00 m</span>
-                            </div>
-                            <div class="box">
-                                <span class="b-lbl">Peak Depth</span>
-                                <span id="gauge-peak-val" class="b-val">0.00 m</span>
-                            </div>
-                        </div>
+                    <div class="depth-number-display">
+                        <span id="readout-depth-val" class="big-number">0.00 m</span>
+                        <span id="readout-hazard-tag" class="hazard-pill safe">Normal</span>
+                    </div>
+                    <div class="depth-submeta">
+                        Ground: <span id="readout-elev">18.4 m</span> OD • Flow: <span id="readout-flow">0.00 m/s</span>
                     </div>
                 </div>
 
-                <!-- Buildings Reached Over Time -->
-                <div class="panel-section">
-                    <div class="section-title">
-                        <span>BUILDINGS REACHED OVER TIME</span>
-                        <span class="sub-count">of 6,638 OSM</span>
+                <!-- Key Impact Metrics -->
+                <div class="metrics-grid">
+                    <div class="metric-card danger">
+                        <span class="m-lbl">BUILDINGS FLOODED</span>
+                        <span id="stat-flooded-bldgs" class="m-val">0</span>
+                        <span class="m-sub">of 6,638 OSM</span>
                     </div>
-                    <div class="buildings-summary-row">
-                        <div class="summary-pill pill-danger">
-                            <span class="lbl">NO BARRIER</span>
-                            <span id="stat-no-barrier" class="val">0</span>
-                        </div>
-                        <div class="summary-pill pill-info">
-                            <span class="lbl">WITH BARRIER</span>
-                            <span id="stat-with-barrier" class="val">0</span>
-                        </div>
-                        <div class="summary-pill pill-success">
-                            <span class="lbl">SAVED DRY</span>
-                            <span id="stat-saved-dry" class="val">+0</span>
-                        </div>
+                    <div class="metric-card warning">
+                        <span class="m-lbl">ROADS CUT OFF</span>
+                        <span id="stat-roads-cutoff" class="m-val">0</span>
+                        <span class="m-sub">&gt;15cm hazard</span>
                     </div>
-                    <!-- Live Dynamic Line Chart -->
-                    <div class="chart-container">
-                        <canvas id="flood-curve-canvas" width="340" height="90"></canvas>
-                        <div class="chart-legend">
-                            <span class="legend-curve red">— Unmitigated Flood</span>
-                            <span class="legend-curve green">— With Quay Barrier</span>
-                        </div>
+                    <div class="metric-card success">
+                        <span class="m-lbl">SAVED BY BARRIER</span>
+                        <span id="stat-saved-bldgs" class="m-val">0</span>
+                        <span class="m-sub">structures safe</span>
+                    </div>
+                    <div class="metric-card info">
+                        <span class="m-lbl">PEAK TOWN DEPTH</span>
+                        <span id="stat-peak-depth" class="m-val">0.00 m</span>
+                        <span class="m-sub">at Quay Street</span>
                     </div>
                 </div>
 
-                <!-- Roads Cut Off List -->
-                <div class="panel-section">
-                    <div class="section-title">
-                        <span>CLONMEL ROADS CUT OFF</span>
-                        <span id="roads-status-pill" class="badge-mini success">0 Impassable</span>
+                <!-- Cut-Off Roads List -->
+                <div class="roads-monitor-box">
+                    <div class="monitor-header">
+                        <span>Cut-off Street Network</span>
+                        <span id="roads-count-badge" class="count-badge">0</span>
                     </div>
-                    <div id="roads-list-container" class="roads-list-container">
-                        <div class="road-item">
+                    <div id="roads-list" class="roads-scroll-list">
+                        <div class="road-entry passable">
                             <span class="r-name">The New Quay</span>
-                            <span class="r-status passable">0.00m PASSABLE</span>
+                            <span class="r-tag">Passable</span>
                         </div>
-                        <div class="road-item">
+                        <div class="road-entry passable">
                             <span class="r-name">Old Bridge</span>
-                            <span class="r-status passable">0.00m PASSABLE</span>
+                            <span class="r-tag">Passable</span>
                         </div>
-                        <div class="road-item">
+                        <div class="road-entry passable">
                             <span class="r-name">Abbey Street</span>
-                            <span class="r-status passable">0.00m PASSABLE</span>
+                            <span class="r-tag">Passable</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Bottom Export Action -->
-                <button id="btn-export-map" class="btn btn-export-large">
-                    <span class="icon">⤓</span> Export Depth Map
+                <!-- Export Depth Map Action -->
+                <button id="btn-export-map" class="btn-export">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Export Depth Map (PNG)
                 </button>
             </aside>
 
-            <!-- Bottom Playback Bar (Full Width Screen Bottom) -->
+            <!-- Bottom Playback Bar -->
             <footer id="bottom-playback-bar">
-                <div class="playback-controls-left">
-                    <button id="btn-play-pause" class="btn btn-play" title="Toggle Play / Pause">
-                        <span id="icon-play-pause">⏸</span> <span id="text-play-pause">Pause</span>
+                <!-- Play / Pause / Reset & Clock -->
+                <div class="playback-left">
+                    <button id="btn-play-pause" class="btn-play-circle" title="Toggle Simulation Play/Pause">
+                        <svg id="icon-play" class="hidden" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                        <svg id="icon-pause" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                            <rect x="6" y="4" width="4" height="16"/>
+                            <rect x="14" y="4" width="4" height="16"/>
+                        </svg>
                     </button>
-                    <button id="btn-reset" class="btn btn-reset" title="Reset Simulation">
-                        ⟲ Reset
+
+                    <button id="btn-reset" class="btn-playback-text" title="Reset Simulation">
+                        ↺ Reset
                     </button>
-                    <div class="clock-display">
-                        <span class="clock-title">FLOOD CLOCK:</span>
-                        <span id="flood-clock-text" class="clock-time">T+00.0 hrs / 24.0 hrs</span>
+
+                    <div class="clock-chip">
+                        <span class="clock-label">FLOOD CLOCK</span>
+                        <span id="flood-clock-text" class="clock-number">T + 00:00:00</span>
                     </div>
                 </div>
 
-                <div class="playback-timeline-center">
-                    <div class="timeline-track-wrapper">
-                        <div id="timeline-fill" class="timeline-fill" style="width: 0%;"></div>
-                        <input type="range" id="timeline-scrubber" min="0" max="86400" step="30" value="0" class="timeline-slider">
+                <!-- Center Timeline Slider / Scrubber Bar -->
+                <div class="playback-center">
+                    <div class="timeline-slider-wrap">
+                        <div id="timeline-progress-fill" class="timeline-progress-fill" style="width: 0%;"></div>
+                        <input type="range" id="timeline-scrubber" min="0" max="86400" step="30" value="0" class="timeline-range-input">
                     </div>
                 </div>
 
-                <div class="playback-speed-right">
-                    <span class="speed-label">SPEED:</span>
-                    <button class="speed-btn" data-speed="1">1x</button>
-                    <button class="speed-btn" data-speed="5">5x</button>
-                    <button class="speed-btn active" data-speed="20">20x</button>
-                    <button class="speed-btn" data-speed="50">50x</button>
+                <!-- Right Speed Multipliers & Navigation Icons -->
+                <div class="playback-right">
+                    <div class="speed-buttons-group">
+                        <button class="speed-btn" data-speed="60">60x</button>
+                        <button class="speed-btn active" data-speed="300">300x</button>
+                        <button class="speed-btn" data-speed="900">900x</button>
+                        <button class="speed-btn" data-speed="2500">Max</button>
+                    </div>
+
+                    <div class="bottom-tools-group">
+                        <!-- Camera Vantage Switcher Icon -->
+                        <button id="btn-cycle-camera" class="tool-icon-btn" title="Cycle Camera Perspectives (Overview, Old Bridge, Sarsfield St, Top-Down)">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                        </button>
+
+                        <!-- GitHub Project Link -->
+                        <a href="https://github.com/Dharshango/clonmel-flood-simulator" target="_blank" rel="noopener noreferrer" class="tool-icon-btn" title="GitHub Repository">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                            </svg>
+                        </a>
+
+                        <!-- Vercel Deploy Link -->
+                        <a href="https://vercel.com/new/clone?repository-url=https://github.com/Dharshango/clonmel-flood-simulator" target="_blank" rel="noopener noreferrer" class="tool-icon-btn vercel" title="Deploy on Vercel">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M12 1L24 22H0L12 1z"/>
+                            </svg>
+                        </a>
+                    </div>
                 </div>
             </footer>
 
-            <!-- Click Inspector 3D Pin Card -->
+            <!-- Floating Point Depth Inspection Marker Card -->
             <div id="inspector-card" class="inspector-card" style="display: none;">
                 <div class="inspect-header">
-                    <div class="pin-icon">📍</div>
-                    <div>
-                        <div id="inspect-street-name" class="inspect-title">Quay Street</div>
-                        <div class="inspect-sub">Point Depth Inspection</div>
-                    </div>
-                    <button id="inspect-close" class="close-btn">×</button>
+                    <span class="pin-dot"></span>
+                    <span id="inspect-street-name" class="inspect-title">Quay Street</span>
+                    <button id="inspect-close" class="close-x">×</button>
                 </div>
-                <div class="inspect-grid">
-                    <div class="inspect-item">
-                        <span class="lbl">Water Depth:</span>
-                        <span id="inspect-depth" class="val font-bold">0.00 m</span>
-                    </div>
-                    <div class="inspect-item">
-                        <span class="lbl">Ground Elevation:</span>
-                        <span id="inspect-elev" class="val">19.2 m</span>
-                    </div>
-                    <div class="inspect-item">
-                        <span class="lbl">Flow Velocity:</span>
-                        <span id="inspect-velocity" class="val">0.00 m/s</span>
-                    </div>
-                    <div class="inspect-item">
-                        <span class="lbl">Peak Depth:</span>
-                        <span id="inspect-peak" class="val">0.00 m</span>
-                    </div>
+                <div class="inspect-row">
+                    <span class="lbl">Depth:</span>
+                    <span id="inspect-depth" class="val">0.00 m</span>
                 </div>
-                <div id="inspect-hazard-badge" class="hazard-badge safe">
-                    Dry / Normal Conditions
+                <div class="inspect-row">
+                    <span class="lbl">Ground:</span>
+                    <span id="inspect-elev" class="val">18.4 m</span>
                 </div>
+                <div class="inspect-row">
+                    <span class="lbl">Velocity:</span>
+                    <span id="inspect-velocity" class="val">0.00 m/s</span>
+                </div>
+                <div id="inspect-hazard-badge" class="hazard-tag safe">Normal</div>
             </div>
         </main>
-
-        <!-- OSM Map Comparison Modal -->
-        <div id="modal-osm" class="modal-overlay hidden">
-            <div class="modal-card">
-                <div class="modal-header">
-                    <h3>🗺️ Clonmel GIS Verification: OpenStreetMap vs 3D DEM Terrain</h3>
-                    <button class="modal-close" id="btn-close-osm">✕</button>
-                </div>
-                <div class="modal-body">
-                    <img src="/data/clonmel_terrain_map_comparison.png" onerror="this.src='/clonmel_terrain_map_comparison.png'" alt="Clonmel OSM vs 3D Simulation Mesh" class="modal-img">
-                    <p class="modal-note">
-                        Elevation sourced from AWS Terrain Tiles / Copernicus DEM Zoom 14. Buildings (6,638 footprints) and roads (2,067 segments) extracted from OpenStreetMap.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Dam-Break & Mass Proof Modal -->
-        <div id="modal-proof" class="modal-overlay hidden">
-            <div class="modal-card">
-                <div class="modal-header">
-                    <h3>📊 Physical Validation: Ritter Analytical Dam-Break Benchmark</h3>
-                    <button class="modal-close" id="btn-close-proof">✕</button>
-                </div>
-                <div class="modal-body">
-                    <img src="/dam_break_benchmark.png" alt="Ritter Dam Break Benchmark" class="modal-img">
-                    <div class="modal-table-row">
-                        <div class="stat-box">
-                            <span class="title">Ritter Depth RMSE</span>
-                            <span class="number">0.327 m (3.27%)</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="title">Dam-Break Mass Error</span>
-                            <span class="number">0.336% (&lt; 1.0%)</span>
-                        </div>
-                        <div class="stat-box">
-                            <span class="title">Full 2D Simulation Error</span>
-                            <span class="number">&lt; 0.050% Conserved</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
     <script type="module" src="/src/main.js"></script>
