@@ -3,59 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Free Board // Clonmel, River Suir</title>
+    <title>Hydroverse — See the flood before it flows</title>
     <link rel="stylesheet" href="/src/style.css">
     <!-- Google Fonts Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <div id="app">
-        <!-- Separate Hero Section for Clonmel Flood Simulator -->
-        <section id="hero-section" class="hero-overlay">
-            <canvas id="hero-water-canvas" class="hero-water-canvas"></canvas>
-            <div class="hero-content">
-                <div class="hero-badge">
-                    <span class="badge-dot"></span>
-                    CLONMEL, CO. TIPPERARY • RIVER SUIR
-                </div>
-                <h1 class="hero-title">FREEBOARD</h1>
-                <p class="hero-subtitle">Real-Time 3D Shallow Water Hydrodynamic Flood Simulator</p>
-                <p class="hero-desc">
-                    An interactive digital twin of Clonmel designed for town residents, elected councillors, and emergency planners.
-                    Simulate 1-in-100-year River Suir flood surges, draw demountable flood walls along the quays,
-                    and replay before-and-after defenses side-by-side on real terrain.
-                </p>
-                
-                <div class="hero-features-grid">
-                    <div class="hero-card">
-                        <div class="hero-card-icon">🏛️</div>
-                        <h3>Real Town & Terrain</h3>
-                        <p>6,638 OpenStreetMap building footprints, actual Suir bathymetry, and Clonmel street network.</p>
-                    </div>
-                    <div class="hero-card">
-                        <div class="hero-card-icon">🌊</div>
-                        <h3>GPU Shallow Water</h3>
-                        <p>2D Kurganov-Petrova Saint-Venant solver on WebGL2 framebuffers with strict mass conservation.</p>
-                    </div>
-                    <div class="hero-card">
-                        <div class="hero-card-icon">🛡️</div>
-                        <h3>Interactive Barriers</h3>
-                        <p>Draw aluminium demountable walls or sandbag lines live and compare protected vs unprotected scenarios.</p>
-                    </div>
-                </div>
+                <!-- Separate Hero Section (Hydroverse Interactive Terrain & Flood Model) -->
+        <section id="hero-section" class="hero-overlay hero" aria-label="Hydroverse flood simulation">
+            <canvas class="terrain" id="terrain" aria-hidden="true"></canvas>
+            <div class="hero-wash" aria-hidden="true"></div>
+            <div class="grain" aria-hidden="true"></div>
 
-                <div class="hero-actions">
-                    <button id="btn-hero-launch" class="btn-hero-launch">
-                        <span>Launch Simulation</span>
-                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                            <polyline points="12 5 19 12 12 19"></polyline>
-                        </svg>
-                    </button>
+            <header class="topbar">
+                <a class="brand" href="#home" aria-label="Hydroverse home">
+                    <svg class="brand-mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                        <path d="M20 4.8C20 4.8 8.5 17.2 8.5 24.5a11.5 11.5 0 0 0 23 0C31.5 17.2 20 4.8 20 4.8Z" stroke="currentColor" stroke-width="1.5" />
+                        <path d="M13.3 25.7c2.6 2.2 5.4 3.3 8.1 3.1 2-.2 3.8-.9 5.4-2.2M15.8 19.8c1.4.7 2.8 1 4.3 1 1.5-.1 3-.5 4.4-1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                    </svg>
+                    <span>hydro<span class="brand-light">verse</span></span>
+                </a>
+                <div class="topbar-right">
+                    <a class="nav-link" href="#how-it-works" id="how-link">How it works <span aria-hidden="true">↗</span></a>
+                    <button id="btn-hero-launch" class="nav-link launch-btn" type="button" title="Launch 3D Flood Simulator">Launch 3D Simulation <span aria-hidden="true">↗</span></button>
+                    <div class="live-state"><span class="live-dot"></span><span>MODEL ONLINE</span></div>
                 </div>
+            </header>
+
+            <section class="hero-content" aria-labelledby="hero-title">
+                <div class="copy-block">
+                    <h1 id="hero-title">See the flood<br />before it <em>flows.</em></h1>
+                    <p class="intro">Explore how water moves through terrain. Trace flood paths, test rising levels, and see what needs protecting — before the next storm.</p>
+                    <div class="actions">
+                        <button class="primary-button" id="run-scenario" type="button">
+                            <span class="button-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M5.2 3.6v8.8L12.1 8 5.2 3.6Z" fill="currentColor" /></svg></span>
+                            <span class="button-label">Run a flood scenario</span>
+                            <span class="button-arrow" aria-hidden="true">↗</span>
+                        </button>
+                        <button class="primary-button cta-3d" id="btn-hero-launch-cta" type="button">
+                            <span class="button-icon" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none"><path d="M2.5 8h11M9 3.5l4.5 4.5-4.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                            <span class="button-label">Launch 3D Simulation</span>
+                            <span class="button-arrow" aria-hidden="true">↗</span>
+                        </button>
+                        <span class="action-note">A clearer view of what comes next.</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="map-label map-label-top"><span class="map-crosshair" aria-hidden="true">+</span><span>LOWLAND BASIN · SECTOR 04</span></div>
+            <div class="map-label map-label-side"><span>▲</span> UPSTREAM <span class="side-rule"></span></div>
+
+            <div class="simulation-readout" aria-label="Live simulation readings">
+                <div class="readout-top"><span>WATER LEVEL</span><span class="readout-live"><span class="live-dot"></span> LIVE</span></div>
+                <div class="level-value"><span id="water-level">+0.72</span><span class="unit">m</span></div>
+                <div class="readout-divider"></div>
+                <div class="extent-row"><span>EST. FLOOD EXTENT</span><strong id="flood-extent">18%</strong></div>
+                <div class="readout-meter"><span id="extent-meter"></span></div>
             </div>
+
+            <div class="interaction-hint"><span class="hint-pointer" aria-hidden="true">⌖</span><span>Move to raise the waterline</span></div>
+            <footer class="hero-footer">
+                <span>WATER FINDS ITS WAY.</span>
+                <span class="footer-center"><span class="footer-dot"></span> TERRAIN MODEL <span class="footer-sep">/</span> INTERACTIVE</span>
+                <span class="coordinates" id="coordinates">52°21′ N &nbsp; 7°42′ W</span>
+            </footer>
+
+            <dialog class="info-dialog" id="info-dialog" aria-labelledby="dialog-title">
+                <button class="dialog-close" id="close-dialog" type="button" aria-label="Close">×</button>
+                <div class="eyebrow"><span class="eyebrow-line"></span> HOW HYDROVERSE WORKS</div>
+                <h2 id="dialog-title">Real-time 3D<br />hydrodynamic <em>simulation.</em></h2>
+                <ol class="method-steps">
+                    <li>
+                        <span>01</span>
+                        <div>
+                            <strong>Map the ground & riverbed</strong>
+                            <p>6,638 OpenStreetMap building footprints aligned with real AWS terrain DEM and River Suir bathymetry.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span>02</span>
+                        <div>
+                            <strong>Solve 2D Shallow Water Equations</strong>
+                            <p>Kurganov-Petrova hydrodynamic solver computed in real-time on WebGL2 framebuffers with strict mass conservation.</p>
+                        </div>
+                    </li>
+                    <li>
+                        <span>03</span>
+                        <div>
+                            <strong>Simulate & deploy defenses</strong>
+                            <p>Draw 2.8m quay walls or sandbag lines live, evaluate building danger levels (Yellow/Red), and compare protected vs baseline flood telemetry side-by-side.</p>
+                        </div>
+                    </li>
+                </ol>
+            </dialog>
         </section>
 
         <!-- Floating Top Navigation Overlay (Model generation directly visible underneath) -->

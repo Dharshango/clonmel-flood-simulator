@@ -7,7 +7,7 @@ import { createRoadsLayer } from './rendering/roads.js';
 import { createBarriersManager } from './rendering/barriers.js';
 import { createInspector } from './ui/inspector.js';
 import { exportPeakDepthMap } from './ui/export_map.js';
-import { initHeroBackground } from './ui/hero_background.js';
+import { initHydroverseHero } from './ui/hydroverse_hero.js';
 
 async function init() {
     console.log('Initializing Free Board (Clonmel, River Suir)...');
@@ -138,14 +138,15 @@ async function init() {
     // UI Elements - Hero Section
     const heroSection = document.getElementById('hero-section');
     const btnHeroLaunch = document.getElementById('btn-hero-launch');
+    const btnHeroLaunchCta = document.getElementById('btn-hero-launch-cta');
     const btnBackHero = document.getElementById('btn-back-hero');
-    const heroBg = initHeroBackground();
+    const heroBg = initHydroverseHero();
     
-    if (btnHeroLaunch && heroSection) {
-        btnHeroLaunch.addEventListener('click', () => {
-            heroSection.classList.add('hidden');
-        });
-    }
+    const launchSimulation = () => {
+        if (heroSection) heroSection.classList.add('hidden');
+    };
+    if (btnHeroLaunch) btnHeroLaunch.addEventListener('click', launchSimulation);
+    if (btnHeroLaunchCta) btnHeroLaunchCta.addEventListener('click', launchSimulation);
     if (btnBackHero && heroSection) {
         btnBackHero.addEventListener('click', () => {
             heroSection.classList.remove('hidden');
