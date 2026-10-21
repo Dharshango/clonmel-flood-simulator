@@ -227,15 +227,6 @@ export function initHydroverseHero() {
         drawRipples(time);
         updateReadout(time);
 
-        if (scenarioLabel && scenarioButton) {
-            if (scenarioActive) {
-                scenarioLabel.textContent = 'Scenario running';
-                scenarioButton.setAttribute('aria-pressed', 'true');
-            } else if (scenarioLabel.textContent !== 'Run a flood scenario') {
-                scenarioLabel.textContent = 'Run a flood scenario';
-                scenarioButton.setAttribute('aria-pressed', 'false');
-            }
-        }
         raf = requestAnimationFrame(frame);
     }
 
@@ -271,17 +262,6 @@ export function initHydroverseHero() {
         if (event.pointerType !== 'touch') pointer.active = false;
     });
 
-    if (scenarioButton) {
-        scenarioButton.addEventListener('click', () => {
-            if (scenarioUntil > performance.now()) {
-                scenarioUntil = 0;
-            } else {
-                scenarioStart = performance.now();
-                scenarioUntil = scenarioStart + 5800;
-                addRipple(width * 0.65, height * 0.52, 1.35);
-            }
-        });
-    }
 
     if (howLink && dialog) {
         howLink.addEventListener('click', (event) => {

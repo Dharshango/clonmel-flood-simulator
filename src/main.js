@@ -137,8 +137,7 @@ async function init() {
     
     // UI Elements - Hero Section
     const heroSection = document.getElementById('hero-section');
-    const btnHeroLaunch = document.getElementById('btn-hero-launch');
-    const btnHeroLaunchCta = document.getElementById('btn-hero-launch-cta');
+    const btnHeroLaunch = document.getElementById('run-scenario') || document.getElementById('btn-hero-launch');
     const btnBackHero = document.getElementById('btn-back-hero');
     const heroBg = initHydroverseHero();
     
@@ -146,7 +145,6 @@ async function init() {
         if (heroSection) heroSection.classList.add('hidden');
     };
     if (btnHeroLaunch) btnHeroLaunch.addEventListener('click', launchSimulation);
-    if (btnHeroLaunchCta) btnHeroLaunchCta.addEventListener('click', launchSimulation);
     if (btnBackHero && heroSection) {
         btnBackHero.addEventListener('click', () => {
             heroSection.classList.remove('hidden');
