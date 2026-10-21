@@ -259,14 +259,14 @@ void main() {
     if (isRiverC > 0.5 && isBldgC < 0.5) {
         float floodTargetH = 1.8 + max(0.0, (u_riverInflow - 55.0) / 100.0) * 0.70;
         if (hNext < floodTargetH) {
-            hNext += min(0.06 * (u_dt / 0.08), floodTargetH - hNext);
-        } else if (hNext > floodTargetH + 0.1) {
-            hNext -= min(0.03 * (u_dt / 0.08), hNext - floodTargetH);
+            hNext += min(0.012 * (u_dt / 0.08), floodTargetH - hNext);
+        } else if (hNext > floodTargetH + 0.05) {
+            hNext -= min(0.008 * (u_dt / 0.08), hNext - floodTargetH);
         }
         
         // Dynamic flow velocity along channel
         float targetQx = 1.8 + (u_riverInflow / 100.0) * 0.75;
-        qxNext = mix(qxNext, targetQx, 0.05);
+        qxNext = mix(qxNext, targetQx, 0.03);
     }
     
     // --- Boundary Conditions: River Suir Inflow (West) and Outflow (East) ---

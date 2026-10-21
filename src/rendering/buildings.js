@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export function createBuildingsLayer(meta, buildingsData, elevArray) {
+export function createBuildingsLayer(meta, buildingsData, elevArray, riverMaskImg = null) {
     const bbox = meta.bbox;
     const w_deg = bbox.east - bbox.west;
     const h_deg = bbox.north - bbox.south;
@@ -8,6 +8,23 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
     const height_m = meta.height_m;
     const gridW = meta.grid_w;
     const gridH = meta.grid_h;
+    
+    // Rasterize river mask to identify river channel vs overland ground/street cells
+    const isRiverCell = new Uint8Array(gridW * gridH);
+    if (riverMaskImg) {
+        const rCanvas = document.createElement('canvas');
+        rCanvas.width = gridW;
+        rCanvas.height = gridH;
+        const rCtx = rCanvas.getContext('2d');
+        rCtx.drawImage(riverMaskImg, 0, 0);
+        const rPix = rCtx.getImageData(0, 0, gridW, gridH).data;
+        for (let y = 0; y < gridH; y++) {
+            const srcY = gridH - 1 - y; // flip Y for WebGL texture alignment (y=0 is South)
+            for (let x = 0; x < gridW; x++) {
+                isRiverCell[y * gridW + x] = rPix[(srcY * gridW + x) * 4] > 128 ? 1 : 0;
+            }
+        }
+    }
     
     const validBuildings = [];
     
@@ -36,11 +53,69 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
         const v = (cLat - bbox.south) / h_deg;
         const gx = Math.min(gridW - 1, Math.max(0, Math.floor(u * gridW)));
         const gy = Math.min(gridH - 1, Math.max(0, Math.floor((1.0 - v) * gridH)));
-        const baseElevation = elevArray[gy * gridW + gx] * 1.2;
+        const groundElev = elevArray[gy * gridW + gx] || 18.0;
+        const baseElevation = groundElev * 1.2;
         
         const sizeX = Math.max(4.0, ((maxLon - minLon) / w_deg) * width_m);
         const sizeZ = Math.max(4.0, ((maxLat - minLat) / h_deg) * height_m);
         const height = Math.max(4.5, b.height || 6.5);
+        
+        const uMin = (minLon - bbox.west) / w_deg;
+        const uMax = (maxLon - bbox.west) / w_deg;
+        const vMin = (minLat - bbox.south) / h_deg;
+        const vMax = (maxLat - bbox.south) / h_deg;
+        
+        // Grid bounds for the footprint plus 1-cell contact border (water touching walls)
+        const gx0 = Math.max(0, Math.floor(uMin * gridW) - 1);
+        const gx1 = Math.min(gridW - 1, Math.ceil(uMax * gridW) + 1);
+        const gy0 = Math.max(0, Math.floor(vMin * gridH) - 1);
+        const gy1 = Math.min(gridH - 1, Math.ceil(vMax * gridH) + 1);
+        
+        const cellMap = new Map(); // key: gy * gridW + gx -> { gx, gy }
+        
+        function addCell(cx, cy) {
+            const k = cy * gridW + cx;
+            if (!cellMap.has(k)) {
+                cellMap.set(k, { gx: cx, gy: cy });
+            }
+        }
+        
+        // 1. Perimeter border cells (where water in streets contacts the building walls)
+        for (let x = gx0; x <= gx1; x++) {
+            addCell(x, gy0);
+            addCell(x, gy1);
+        }
+        for (let y = gy0; y <= gy1; y++) {
+            addCell(gx0, y);
+            addCell(gx1, y);
+        }
+        // 2. All polygon footprint vertices
+        for (let p of pts) {
+            const pu = (p[0] - bbox.west) / w_deg;
+            const pv = (p[1] - bbox.south) / h_deg;
+            const pgx = Math.min(gridW - 1, Math.max(0, Math.floor(pu * gridW)));
+            const pgy = Math.min(gridH - 1, Math.max(0, Math.floor(pv * gridH)));
+            addCell(pgx, pgy);
+        }
+        // 3. Center cell
+        const cgx = Math.min(gridW - 1, Math.max(0, Math.floor(u * gridW)));
+        const cgy = Math.min(gridH - 1, Math.max(0, Math.floor(v * gridH)));
+        addCell(cgx, cgy);
+        
+        const cellCount = cellMap.size;
+        const sampleOffsets = new Int32Array(cellCount);
+        const cellElevs = new Float32Array(cellCount);
+        const isRiverArr = new Uint8Array(cellCount);
+        
+        let cIdx = 0;
+        for (let entry of cellMap.values()) {
+            const cellKey = entry.gy * gridW + entry.gx;
+            sampleOffsets[cIdx] = cellKey * 4;
+            const srcY = gridH - 1 - entry.gy;
+            cellElevs[cIdx] = elevArray[srcY * gridW + entry.gx] || 18.0;
+            isRiverArr[cIdx] = isRiverCell[cellKey];
+            cIdx++;
+        }
         
         validBuildings.push({
             id: b.id,
@@ -49,11 +124,15 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
             posX,
             posZ,
             baseY: baseElevation,
+            groundElev,
             sizeX,
             sizeZ,
             height,
             u,
             v,
+            sampleOffsets,
+            cellElevs,
+            isRiverArr,
             isFlooded: false,
             isSaved: false
         });
@@ -77,9 +156,9 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
     instancedMesh.castShadow = true;
     instancedMesh.receiveShadow = true;
     
-    // Status colors matching user reference:
+    // Status colors:
     // Cream: normal dry buildings
-    // Yellow: partially affected by water overflowing the quays (0.05m <= h < 0.40m)
+    // Yellow: partially affected by water (0.05m <= h < 0.40m)
     // Red: completely endangered in deep/rushing flood (h >= 0.40m)
     // Green: saved by barrier in comparison mode
     const yellowPartialColor = new THREE.Color(0xfacc15); // bright amber/yellow
@@ -115,20 +194,34 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
         let partialCount = 0;
         let savedCount = 0;
         
+        const buf = simulator.readbackBuffer;
+        const baseBuf = (sideBySide && baselineSimulator) ? baselineSimulator.readbackBuffer : null;
+        
         for (let i = 0; i < count; i++) {
             const b = validBuildings[i];
+            const offsets = b.sampleOffsets;
+            const cellElevs = b.cellElevs;
+            const isRiverArr = b.isRiverArr;
+            const len = offsets.length;
+            const gElev = b.groundElev;
             
-            // Sample building footprint (center + edges) so water rushing through any edge marks it
-            const du = (b.sizeX / width_m) * 0.45;
-            const dv = (b.sizeZ / height_m) * 0.45;
+            let maxH = 0.0;
+            for (let k = 0; k < len; k++) {
+                const off = offsets[k];
+                const h = buf[off];
+                if (h >= 0.05) {
+                    if (isRiverArr[k] === 1) {
+                        // In river channel, only counts as flood if water surface rises above building ground elevation
+                        const overtop = (cellElevs[k] + h) - gElev;
+                        if (overtop > maxH) maxH = overtop;
+                    } else {
+                        // Overland street flood touching/immersing building
+                        if (h > maxH) maxH = h;
+                    }
+                }
+            }
             
-            let maxH = simulator.samplePoint(b.u, b.v).h;
-            maxH = Math.max(maxH, simulator.samplePoint(b.u - du, b.v).h);
-            maxH = Math.max(maxH, simulator.samplePoint(b.u + du, b.v).h);
-            maxH = Math.max(maxH, simulator.samplePoint(b.u, b.v - dv).h);
-            maxH = Math.max(maxH, simulator.samplePoint(b.u, b.v + dv).h);
-            
-            // Mark building only if water reaches/rushes through it (h >= 0.05m)
+            // Mark building only if overland flood water reaches/rushes through it (h >= 0.05m)
             const isFloodedNow = maxH >= 0.05;
             b.isFlooded = isFloodedNow;
             b.depth = maxH;
@@ -146,13 +239,20 @@ export function createBuildingsLayer(meta, buildingsData, elevArray) {
                 b.status = 'safe';
             }
             
-            if (sideBySide && baselineSimulator) {
-                let baseMaxH = baselineSimulator.samplePoint(b.u, b.v).h;
-                baseMaxH = Math.max(baseMaxH, baselineSimulator.samplePoint(b.u - du, b.v).h);
-                baseMaxH = Math.max(baseMaxH, baselineSimulator.samplePoint(b.u + du, b.v).h);
-                baseMaxH = Math.max(baseMaxH, baselineSimulator.samplePoint(b.u, b.v - dv).h);
-                baseMaxH = Math.max(baseMaxH, baselineSimulator.samplePoint(b.u, b.v + dv).h);
-                
+            if (baseBuf) {
+                let baseMaxH = 0.0;
+                for (let k = 0; k < len; k++) {
+                    const off = offsets[k];
+                    const h = baseBuf[off];
+                    if (h >= 0.05) {
+                        if (isRiverArr[k] === 1) {
+                            const overtop = (cellElevs[k] + h) - gElev;
+                            if (overtop > baseMaxH) baseMaxH = overtop;
+                        } else {
+                            if (h > baseMaxH) baseMaxH = h;
+                        }
+                    }
+                }
                 const wasFloodedInBase = baseMaxH >= 0.05;
                 // If flooded without barrier, but dry with barrier: IT IS SAVED!
                 b.isSaved = wasFloodedInBase && !isFloodedNow;

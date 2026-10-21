@@ -197,17 +197,51 @@ export class SWESimulator {
         this.currentVolume = this.initialVolume;
     }
     
+    getHydrographFactor() {
+        // Smooth progression over 6 simulated hours (21600 seconds)
+        const T = Math.min(1.0, Math.max(0.0, this.totalSimTime / 21600.0));
+        if (T <= 0.35) {
+            const p = T / 0.35;
+            return p * p * (3.0 - 2.0 * p);
+        } else if (T <= 0.70) {
+            return 1.0;
+        } else {
+            const p = (T - 0.70) / 0.30;
+            return 1.0 - 0.15 * (p * p * (3.0 - 2.0 * p));
+        }
+    }
+    
+    getCurrentInflow() {
+        const target = this.params.riverInflow;
+        const base = 55.0; // normal River Suir flow
+        if (target <= base) return base;
+        return base + (target - base) * this.getHydrographFactor();
+    }
+    
+    getCurrentRain() {
+        return this.params.rainRate * this.getHydrographFactor();
+    }
+    
+    getCurrentSurge() {
+        return this.params.downstreamSurge * this.getHydrographFactor();
+    }
+
     step(dtMultiplier = 1.0) {
+        const currentInflow = this.getCurrentInflow();
+        const currentRain = this.getCurrentRain();
+        const currentSurge = this.getCurrentSurge();
+        
         // Convert rain rate from mm/hr to m/s: 1 mm/hr = 1e-3 / 3600 m/s = 2.777e-7 m/s
-        const rain_m_s = (this.params.rainRate / 1000.0) / 3600.0;
+        const rain_m_s = (currentRain / 1000.0) / 3600.0;
         
         this.computeMaterial.uniforms.u_rainRate.value = rain_m_s;
-        this.computeMaterial.uniforms.u_riverInflow.value = this.params.riverInflow;
-        this.computeMaterial.uniforms.u_downstreamSurge.value = this.params.downstreamSurge;
+        this.computeMaterial.uniforms.u_riverInflow.value = currentInflow;
+        this.computeMaterial.uniforms.u_downstreamSurge.value = currentSurge;
         this.computeMaterial.uniforms.u_manningN.value = this.params.manningN;
         
-        const subSteps = Math.max(1, Math.round(this.params.subSteps * dtMultiplier));
-        const dt = this.params.dt;
+        // Advance sub-steps smoothly based on playback speed multiplier
+        const subSteps = Math.min(12, Math.max(3, Math.round(this.params.subSteps * Math.sqrt(dtMultiplier))));
+        const dt = (this.params.dt * dtMultiplier * this.params.subSteps) / subSteps;
         this.computeMaterial.uniforms.u_dt.value = dt;
         
         this.quadMesh.material = this.computeMaterial;

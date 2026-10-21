@@ -7,6 +7,7 @@ import { createRoadsLayer } from './rendering/roads.js';
 import { createBarriersManager } from './rendering/barriers.js';
 import { createInspector } from './ui/inspector.js';
 import { exportPeakDepthMap } from './ui/export_map.js';
+import { initHeroBackground } from './ui/hero_background.js';
 
 async function init() {
     console.log('Initializing Free Board (Clonmel, River Suir)...');
@@ -108,7 +109,7 @@ async function init() {
     scene.add(waterMesh);
     
     // 3D Buildings Layer (Architectural Gray)
-    const buildingsLayer = createBuildingsLayer(meta, bldgsResp, elevArray);
+    const buildingsLayer = createBuildingsLayer(meta, bldgsResp, elevArray, riverMaskImg);
     scene.add(buildingsLayer.mesh);
     
     // Roads Layer
@@ -138,6 +139,7 @@ async function init() {
     const heroSection = document.getElementById('hero-section');
     const btnHeroLaunch = document.getElementById('btn-hero-launch');
     const btnBackHero = document.getElementById('btn-back-hero');
+    const heroBg = initHeroBackground();
     
     if (btnHeroLaunch && heroSection) {
         btnHeroLaunch.addEventListener('click', () => {
@@ -426,6 +428,7 @@ async function init() {
     timelineScrubber.addEventListener('input', (e) => {
         const val = parseFloat(e.target.value);
         simulator.totalSimTime = val;
+        baselineSimulator.totalSimTime = val;
         const pct = Math.min(100, (val / 21600) * 100);
         timelineProgressFill.style.width = `${pct}%`;
         if (scrubberKnob) scrubberKnob.style.left = `${pct}%`;

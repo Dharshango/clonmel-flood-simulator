@@ -112,7 +112,7 @@ export function createInspector(camera, terrainMesh, simulator, meta, elevArray,
         depthEl.textContent = `${h.toFixed(2)} m`;
         elevEl.textContent = `${groundElev.toFixed(1)} m`;
         velEl.textContent = `${vel.toFixed(2)} m/s`;
-        peakEl.textContent = `${sample.peak_h.toFixed(2)} m`;
+        if (peakEl) peakEl.textContent = `${sample.peak_h.toFixed(2)} m`;
         
         // Hazard classification
         if (h < 0.05) {
