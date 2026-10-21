@@ -10,7 +10,7 @@ import { exportPeakDepthMap } from './ui/export_map.js';
 import { initHydroverseHero } from './ui/hydroverse_hero.js';
 
 async function init() {
-    console.log('Initializing Free Board (Clonmel, River Suir)...');
+    console.log('Initializing Hydroverse (Clonmel, River Suir)...');
     
     // 1. Fetch GIS Data
     const [meta, elevBuffer, bldgsResp, roadsResp, presetsResp] = await Promise.all([
@@ -773,7 +773,7 @@ async function init() {
     
     // Start animation loop
     animate(performance.now());
-    console.log('Free Board Clonmel Flood Simulator is running smoothly!');
+    console.log('Hydroverse Clonmel Flood Simulator is running smoothly!');
 }
 
 window.addEventListener('DOMContentLoaded', init);
