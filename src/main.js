@@ -156,6 +156,7 @@ async function init() {
     const heroSection = document.getElementById('hero-section');
     const btnHeroLaunch = document.getElementById('run-scenario') || document.getElementById('btn-hero-launch');
     const btnBackHero = document.getElementById('btn-back-hero');
+    const brandNavHome = document.getElementById('brand-nav-home');
     const heroBg = initHydroverseHero();
     
     const launchSimulation = () => {
@@ -164,6 +165,11 @@ async function init() {
     if (btnHeroLaunch) btnHeroLaunch.addEventListener('click', launchSimulation);
     if (btnBackHero && heroSection) {
         btnBackHero.addEventListener('click', () => {
+            heroSection.classList.remove('hidden');
+        });
+    }
+    if (brandNavHome && heroSection) {
+        brandNavHome.addEventListener('click', () => {
             heroSection.classList.remove('hidden');
         });
     }
@@ -249,6 +255,44 @@ async function init() {
     const btnUndoBarrier = document.getElementById('btn-undo-barrier');
     const btnClearBarriers = document.getElementById('btn-clear-barriers');
     const barrierStatusText = document.getElementById('barrier-status-text');
+
+    // Barrier Configuration & Dimension Elements
+    const barrierConfigPanel = document.getElementById('barrier-config-panel');
+    const barrierSpecTitle = document.getElementById('barrier-spec-title');
+    const barrierHeightInput = document.getElementById('barrier-height-input');
+    const barrierHeightSlider = document.getElementById('barrier-height-slider');
+    const barrierHeightMid = document.getElementById('barrier-height-mid');
+    const barrierDepthInput = document.getElementById('barrier-depth-input');
+    const barrierDepthSlider = document.getElementById('barrier-depth-slider');
+    const barrierDepthMid = document.getElementById('barrier-depth-mid');
+    const barrierThickInput = document.getElementById('barrier-thick-input');
+    const barrierThickSlider = document.getElementById('barrier-thick-slider');
+
+    // Map Drawing Action Buttons
+    const btnStartDrawing = document.getElementById('btn-start-drawing');
+    const btnDrawText = document.getElementById('btn-draw-text');
+    const drawActiveActions = document.getElementById('draw-active-actions');
+    const btnFinishBarrier = document.getElementById('btn-finish-barrier');
+    const btnCancelBarrier = document.getElementById('btn-cancel-barrier');
+    const drawLiveInstructions = document.getElementById('draw-live-instructions');
+    const drawVertexCount = document.getElementById('draw-vertex-count');
+
+    // Floating Canvas Drawing HUD Banner
+    const drawingHudBanner = document.getElementById('drawing-hud-banner');
+    const hudBannerTitle = document.getElementById('hud-banner-title');
+    const hudVertexCount = document.getElementById('hud-vertex-count');
+    const hudLengthCount = document.getElementById('hud-length-count');
+    const hudCrestVal = document.getElementById('hud-crest-val');
+    const hudDepthVal = document.getElementById('hud-depth-val');
+    const hudBtnFinish = document.getElementById('hud-btn-finish');
+    const hudBtnCancel = document.getElementById('hud-btn-cancel');
+
+    // Intervention Multi-Criteria Scorecard
+    const scWallLength = document.getElementById('sc-wall-length');
+    const scSavedBldgs = document.getElementById('sc-saved-bldgs');
+    const scProtectRate = document.getElementById('sc-protect-rate');
+    const scResilienceIndex = document.getElementById('sc-resilience-index');
+    const scDeployTime = document.getElementById('sc-deploy-time');
     
     // Readouts (Right Panel)
     const readoutStreet = document.getElementById('readout-street');
@@ -312,19 +356,220 @@ async function init() {
     if (tabImpact) tabImpact.addEventListener('click', () => setMode('impact'));
     if (tabScience) tabScience.addEventListener('click', () => setMode('science'));
     
+    // Interactive Map Drawing 3D Primitives & Materials
+    const drawingGroup = new THREE.Group();
+    scene.add(drawingGroup);
+
+    const rubberBandGeom = new THREE.BufferGeometry();
+    const rubberBandPos = new Float32Array(6); // 2 vertices * (x,y,z)
+    rubberBandGeom.setAttribute('position', new THREE.BufferAttribute(rubberBandPos, 3));
+    const rubberBandMat = new THREE.LineBasicMaterial({
+        color: 0x38bdf8,
+        linewidth: 3,
+        transparent: true,
+        opacity: 0.95
+    });
+    const rubberBandLine = new THREE.Line(rubberBandGeom, rubberBandMat);
+    rubberBandLine.visible = false;
+    drawingGroup.add(rubberBandLine);
+
+    const cursorRingGeom = new THREE.RingGeometry(0.8, 1.4, 24);
+    cursorRingGeom.rotateX(-Math.PI / 2);
+    const cursorRingMat = new THREE.MeshBasicMaterial({
+        color: 0x38bdf8,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.85
+    });
+    const cursorRing = new THREE.Mesh(cursorRingGeom, cursorRingMat);
+    cursorRing.visible = false;
+    drawingGroup.add(cursorRing);
+
+    const vertexMarkerGeom = new THREE.SphereGeometry(1.2, 16, 16);
+    const wallVertexMat = new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.85,
+        roughness: 0.2,
+        metalness: 0.8
+    });
+    const sandbagVertexMat = new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        emissive: 0xd97706,
+        emissiveIntensity: 0.85,
+        roughness: 0.3,
+        metalness: 0.6
+    });
+
+    let isDrawingMode = false;
+    let currentDrawingPoints = []; // [[lon, lat], ...]
+    let currentDrawingWorldPoints = []; // [THREE.Vector3, ...]
+    let drawnVertexMeshes = [];
+    let totalDrawnLengthMeters = 0;
+
+    function cleanupDrawingVisuals() {
+        rubberBandLine.visible = false;
+        cursorRing.visible = false;
+        for (const m of drawnVertexMeshes) {
+            drawingGroup.remove(m);
+            if (m.geometry) m.geometry.dispose();
+        }
+        drawnVertexMeshes = [];
+    }
+
+    function startDrawingMode() {
+        if (activeBarrierTool === 'preset') {
+            selectBarrierTool('wall');
+        }
+        isDrawingMode = true;
+        currentDrawingPoints = [];
+        currentDrawingWorldPoints = [];
+        totalDrawnLengthMeters = 0;
+        cleanupDrawingVisuals();
+        
+        if (btnStartDrawing) {
+            btnStartDrawing.classList.add('active');
+            if (btnDrawText) btnDrawText.textContent = activeBarrierTool === 'wall' ? 'Drawing Wall Active...' : 'Drawing Sandbag Active...';
+        }
+        if (drawActiveActions) drawActiveActions.classList.remove('hidden');
+        if (drawLiveInstructions) drawLiveInstructions.classList.remove('hidden');
+        if (drawVertexCount) drawVertexCount.textContent = '0';
+
+        const crestH = barrierHeightInput ? barrierHeightInput.value : (activeBarrierTool === 'wall' ? '2.8' : '1.2');
+        const depthD = barrierDepthInput ? barrierDepthInput.value : (activeBarrierTool === 'wall' ? '2.0' : '1.0');
+
+        if (drawingHudBanner) {
+            drawingHudBanner.classList.remove('hidden');
+            if (hudBannerTitle) hudBannerTitle.textContent = activeBarrierTool === 'wall' ? 'DRAWING FLOOD WALL ON 3D MAP' : 'DRAWING SANDBAG BUND ON 3D MAP';
+            if (hudVertexCount) hudVertexCount.textContent = '0';
+            if (hudLengthCount) hudLengthCount.textContent = '0.0 m';
+            if (hudCrestVal) hudCrestVal.textContent = `${crestH}m`;
+            if (hudDepthVal) hudDepthVal.textContent = `${depthD}m`;
+        }
+        canvas.style.cursor = 'crosshair';
+    }
+
+    function stopDrawingMode() {
+        isDrawingMode = false;
+        currentDrawingPoints = [];
+        currentDrawingWorldPoints = [];
+        totalDrawnLengthMeters = 0;
+        cleanupDrawingVisuals();
+        
+        if (btnStartDrawing) {
+            btnStartDrawing.classList.remove('active');
+            if (btnDrawText) btnDrawText.textContent = activeBarrierTool === 'wall' ? 'Draw Wall on Map' : 'Draw Sandbag on Map';
+        }
+        if (drawActiveActions) drawActiveActions.classList.add('hidden');
+        if (drawLiveInstructions) drawLiveInstructions.classList.add('hidden');
+        if (drawingHudBanner) drawingHudBanner.classList.add('hidden');
+        canvas.style.cursor = 'default';
+    }
+
+    function commitDrawnBarrier() {
+        if (currentDrawingPoints.length < 2) {
+            stopDrawingMode();
+            return;
+        }
+        const h = parseFloat(barrierHeightInput?.value || barrierHeightSlider?.value || (activeBarrierTool === 'wall' ? 2.8 : 1.2));
+        const d = parseFloat(barrierDepthInput?.value || barrierDepthSlider?.value || (activeBarrierTool === 'wall' ? 2.0 : 1.0));
+        const th = parseFloat(barrierThickInput?.value || barrierThickSlider?.value || (activeBarrierTool === 'wall' ? 1.2 : 2.4));
+        const name = activeBarrierTool === 'wall' 
+            ? `Demountable Wall (+${h.toFixed(1)}m, -${d.toFixed(1)}m Bed)`
+            : `Sandbag Bund (+${h.toFixed(1)}m, -${d.toFixed(1)}m Bed)`;
+
+        barriersManager.addBarrierPolyline(currentDrawingPoints, activeBarrierTool, h, d, th, name);
+        stopDrawingMode();
+        updateBarrierUI();
+        updateTelemetry();
+    }
+
+    // Bidirectional Slider <-> Input Synchronizers
+    if (barrierHeightSlider && barrierHeightInput) {
+        barrierHeightSlider.addEventListener('input', () => {
+            barrierHeightInput.value = barrierHeightSlider.value;
+            if (hudCrestVal) hudCrestVal.textContent = `${barrierHeightSlider.value}m`;
+            if (statBarrierHeight) statBarrierHeight.textContent = `${Number(barrierHeightSlider.value).toFixed(2)} m`;
+        });
+        barrierHeightInput.addEventListener('input', () => {
+            barrierHeightSlider.value = barrierHeightInput.value;
+            if (hudCrestVal) hudCrestVal.textContent = `${barrierHeightInput.value}m`;
+            if (statBarrierHeight) statBarrierHeight.textContent = `${Number(barrierHeightInput.value).toFixed(2)} m`;
+        });
+    }
+
+    if (barrierDepthSlider && barrierDepthInput) {
+        barrierDepthSlider.addEventListener('input', () => {
+            barrierDepthInput.value = barrierDepthSlider.value;
+            if (hudDepthVal) hudDepthVal.textContent = `${barrierDepthSlider.value}m`;
+        });
+        barrierDepthInput.addEventListener('input', () => {
+            barrierDepthSlider.value = barrierDepthInput.value;
+            if (hudDepthVal) hudDepthVal.textContent = `${barrierDepthInput.value}m`;
+        });
+    }
+
+    if (barrierThickSlider && barrierThickInput) {
+        barrierThickSlider.addEventListener('input', () => {
+            barrierThickInput.value = barrierThickSlider.value;
+        });
+        barrierThickInput.addEventListener('input', () => {
+            barrierThickSlider.value = barrierThickInput.value;
+        });
+    }
+
+    // Drawing Action Buttons Listeners
+    if (btnStartDrawing) {
+        btnStartDrawing.addEventListener('click', () => {
+            if (isDrawingMode) {
+                stopDrawingMode();
+            } else {
+                startDrawingMode();
+            }
+        });
+    }
+    if (btnFinishBarrier) btnFinishBarrier.addEventListener('click', commitDrawnBarrier);
+    if (hudBtnFinish) hudBtnFinish.addEventListener('click', commitDrawnBarrier);
+    if (btnCancelBarrier) btnCancelBarrier.addEventListener('click', stopDrawingMode);
+    if (hudBtnCancel) hudBtnCancel.addEventListener('click', stopDrawingMode);
+
     function updateBarrierUI() {
         const count = barriersManager.barriers.length;
         const totalLen = barriersManager.getTotalLength();
         if (statBarrierLength) {
             statBarrierLength.textContent = `${totalLen.toLocaleString()} m`;
         }
+        if (scWallLength) {
+            scWallLength.textContent = `${totalLen.toLocaleString()} m`;
+        }
+        
+        // Multi-Criteria Intervention Scorecard
+        if (scSavedBldgs && scProtectRate && scResilienceIndex && scDeployTime) {
+            if (totalLen > 0) {
+                const saved = Math.min(642, Math.round(totalLen * 0.43));
+                const protectPercent = Math.min(100, Math.round(65 + (totalLen / 1480) * 35));
+                const resilience = Math.min(96, Math.round(50 + (totalLen / 1480) * 45));
+                const deployHours = (totalLen / 420).toFixed(1);
+                
+                scSavedBldgs.textContent = saved.toLocaleString();
+                scProtectRate.textContent = `${protectPercent.toFixed(1)}%`;
+                scResilienceIndex.textContent = `${resilience} / 100`;
+                scDeployTime.textContent = `${deployHours} hrs`;
+            } else {
+                scSavedBldgs.textContent = '0';
+                scProtectRate.textContent = '0.0%';
+                scResilienceIndex.textContent = '38 / 100';
+                scDeployTime.textContent = '0.0 hrs';
+            }
+        }
+
         if (barrierStatusText) {
             if (count > 0) {
                 barrierStatusText.className = 'status-pill-green';
                 barrierStatusText.style.background = 'rgba(16, 185, 129, 0.2)';
                 barrierStatusText.style.color = '#34d399';
                 barrierStatusText.style.borderColor = 'rgba(16, 185, 129, 0.35)';
-                barrierStatusText.textContent = `${count} BARRIER${count > 1 ? 'S' : ''}`;
+                barrierStatusText.textContent = `${count} ACTIVE`;
             } else {
                 barrierStatusText.className = 'status-pill-green';
                 barrierStatusText.style.background = 'rgba(239, 68, 68, 0.2)';
@@ -338,17 +583,73 @@ async function init() {
     // Barrier Defense Studio Tool Selection
     function selectBarrierTool(tool) {
         activeBarrierTool = tool;
-        pendingBarrierPoint = null;
+        if (isDrawingMode) stopDrawingMode();
+        
         [btnToolWall, btnToolSandbags, btnToolPreset].forEach(b => {
             if (b) b.classList.toggle('active', b.dataset.tool === tool);
         });
         
         if (tool === 'wall') {
+            if (barrierConfigPanel) barrierConfigPanel.style.display = 'flex';
+            if (barrierSpecTitle) barrierSpecTitle.textContent = 'WALL SPECIFICATIONS';
+            if (barrierHeightSlider && barrierHeightInput) {
+                barrierHeightSlider.min = 0.5;
+                barrierHeightSlider.max = 5.0;
+                barrierHeightSlider.value = 2.8;
+                barrierHeightInput.value = 2.8;
+                if (barrierHeightMid) barrierHeightMid.textContent = '2.8 m';
+            }
+            if (barrierDepthSlider && barrierDepthInput) {
+                barrierDepthSlider.min = 0.5;
+                barrierDepthSlider.max = 4.0;
+                barrierDepthSlider.value = 2.0;
+                barrierDepthInput.value = 2.0;
+                if (barrierDepthMid) barrierDepthMid.textContent = '2.0 m';
+            }
+            if (barrierThickSlider && barrierThickInput) {
+                barrierThickSlider.min = 0.4;
+                barrierThickSlider.max = 2.5;
+                barrierThickSlider.value = 1.2;
+                barrierThickInput.value = 1.2;
+            }
+            if (btnDrawText) btnDrawText.textContent = 'Draw Wall on Map';
+            if (rubberBandMat) rubberBandMat.color.setHex(0x38bdf8);
+            if (cursorRingMat) cursorRingMat.color.setHex(0x38bdf8);
             if (statBarrierHeight) statBarrierHeight.textContent = '2.80 m';
         } else if (tool === 'sandbags') {
+            if (barrierConfigPanel) barrierConfigPanel.style.display = 'flex';
+            if (barrierSpecTitle) barrierSpecTitle.textContent = 'SANDBAG BUND SPECIFICATIONS';
+            if (barrierHeightSlider && barrierHeightInput) {
+                barrierHeightSlider.min = 0.4;
+                barrierHeightSlider.max = 2.5;
+                barrierHeightSlider.value = 1.2;
+                barrierHeightInput.value = 1.2;
+                if (barrierHeightMid) barrierHeightMid.textContent = '1.2 m';
+            }
+            if (barrierDepthSlider && barrierDepthInput) {
+                barrierDepthSlider.min = 0.2;
+                barrierDepthSlider.max = 2.0;
+                barrierDepthSlider.value = 1.0;
+                barrierDepthInput.value = 1.0;
+                if (barrierDepthMid) barrierDepthMid.textContent = '1.0 m';
+            }
+            if (barrierThickSlider && barrierThickInput) {
+                barrierThickSlider.min = 0.8;
+                barrierThickSlider.max = 3.5;
+                barrierThickSlider.value = 2.4;
+                barrierThickInput.value = 2.4;
+            }
+            if (btnDrawText) btnDrawText.textContent = 'Draw Sandbag on Map';
+            if (rubberBandMat) rubberBandMat.color.setHex(0xf59e0b);
+            if (cursorRingMat) cursorRingMat.color.setHex(0xf59e0b);
             if (statBarrierHeight) statBarrierHeight.textContent = '1.20 m';
         } else if (tool === 'preset') {
             barriersManager.loadPresets(presetsResp);
+            if (barrierConfigPanel) barrierConfigPanel.style.display = 'flex';
+            if (barrierSpecTitle) barrierSpecTitle.textContent = 'CLONMEL RELIEF SCHEME';
+            if (barrierHeightInput) barrierHeightInput.value = 2.8;
+            if (barrierDepthInput) barrierDepthInput.value = 2.0;
+            if (barrierThickInput) barrierThickInput.value = 1.2;
             if (statBarrierHeight) statBarrierHeight.textContent = '2.80 m';
             updateBarrierUI();
         }
@@ -361,7 +662,7 @@ async function init() {
     if (btnUndoBarrier) {
         btnUndoBarrier.addEventListener('click', () => {
             barriersManager.undoLast();
-            pendingBarrierPoint = null;
+            if (isDrawingMode) stopDrawingMode();
             updateBarrierUI();
         });
     }
@@ -369,7 +670,7 @@ async function init() {
     if (btnClearBarriers) {
         btnClearBarriers.addEventListener('click', () => {
             barriersManager.clearAll();
-            pendingBarrierPoint = null;
+            if (isDrawingMode) stopDrawingMode();
             updateBarrierUI();
         });
     }
@@ -873,12 +1174,46 @@ async function init() {
         }
     }
     
+    // Live Mouse Move for Interactive Barrier Rubber-Band Preview
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isDrawingMode) return;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), camera);
+        const intersects = raycaster.intersectObject(terrainMesh);
+        
+        if (intersects.length > 0) {
+            const pt = intersects[0].point;
+            cursorRing.visible = true;
+            cursorRing.position.set(pt.x, pt.y + 0.25, pt.z);
+            
+            if (currentDrawingWorldPoints.length > 0) {
+                const lastW = currentDrawingWorldPoints[currentDrawingWorldPoints.length - 1];
+                const posAttr = rubberBandLine.geometry.attributes.position;
+                posAttr.setXYZ(0, lastW.x, lastW.y + 0.6, lastW.z);
+                posAttr.setXYZ(1, pt.x, pt.y + 0.6, pt.z);
+                posAttr.needsUpdate = true;
+                rubberBandLine.visible = true;
+                
+                const segDist = Math.hypot(pt.x - lastW.x, pt.z - lastW.z);
+                const currentTotal = totalDrawnLengthMeters + segDist;
+                if (hudLengthCount) hudLengthCount.textContent = `${currentTotal.toFixed(1)} m`;
+            }
+        } else {
+            cursorRing.visible = false;
+            rubberBandLine.visible = false;
+        }
+    });
+
     // Click for Depth Inspection & Interactive Barrier Placement
     canvas.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         
-        // If in Intervention mode and drawing tool is active (wall or sandbags)
-        if ((activeMode === 'barrier' || activeMode === 'intervention') && (activeBarrierTool === 'wall' || activeBarrierTool === 'sandbags')) {
+        // If in Drawing Mode
+        if (isDrawingMode) {
             const rect = canvas.getBoundingClientRect();
             const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
             const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -889,21 +1224,33 @@ async function init() {
             
             if (intersects.length > 0) {
                 const pt = intersects[0].point;
-                // Convert world (pt.x, pt.z) to lon, lat
+                // Minimum distance check to prevent duplicate points on same pixel
+                if (currentDrawingWorldPoints.length > 0) {
+                    const lastPt = currentDrawingWorldPoints[currentDrawingWorldPoints.length - 1];
+                    const dist = Math.hypot(pt.x - lastPt.x, pt.z - lastPt.z);
+                    if (dist < 0.8) return;
+                    totalDrawnLengthMeters += dist;
+                }
+                
                 const u = (pt.x / meta.width_m) + 0.5;
                 const v = -(pt.z / meta.height_m) + 0.5;
                 const lon = meta.bbox.west + u * (meta.bbox.east - meta.bbox.west);
                 const lat = meta.bbox.south + v * (meta.bbox.north - meta.bbox.south);
                 
-                if (!pendingBarrierPoint) {
-                    pendingBarrierPoint = [lon, lat];
-                } else {
-                    const height = activeBarrierTool === 'wall' ? 2.8 : 1.2;
-                    const toolName = activeBarrierTool === 'wall' ? 'Demountable Wall' : 'Sandbag Bund';
-                    barriersManager.addBarrierPolyline([pendingBarrierPoint, [lon, lat]], activeBarrierTool, height, toolName);
-                    pendingBarrierPoint = [lon, lat];
-                    updateBarrierUI();
-                }
+                currentDrawingPoints.push([lon, lat]);
+                currentDrawingWorldPoints.push(new THREE.Vector3(pt.x, pt.y, pt.z));
+                
+                // Add glowing marker sphere at placed point
+                const markerMat = activeBarrierTool === 'wall' ? wallVertexMat : sandbagVertexMat;
+                const markerMesh = new THREE.Mesh(vertexMarkerGeom, markerMat);
+                markerMesh.position.set(pt.x, pt.y + 0.6, pt.z);
+                drawingGroup.add(markerMesh);
+                drawnVertexMeshes.push(markerMesh);
+                
+                const count = currentDrawingPoints.length;
+                if (drawVertexCount) drawVertexCount.textContent = count;
+                if (hudVertexCount) hudVertexCount.textContent = count;
+                if (hudLengthCount) hudLengthCount.textContent = `${totalDrawnLengthMeters.toFixed(1)} m`;
                 return;
             }
         }
@@ -918,11 +1265,31 @@ async function init() {
         }
     });
 
-    // Right click cancels ongoing drawing polyline
-    canvas.addEventListener('contextmenu', (e) => {
-        if (activeMode === 'barrier' || activeMode === 'intervention') {
+    // Double-click finishes the barrier
+    canvas.addEventListener('dblclick', (e) => {
+        if (isDrawingMode && currentDrawingPoints.length >= 2) {
             e.preventDefault();
-            pendingBarrierPoint = null;
+            commitDrawnBarrier();
+        }
+    });
+
+    // Right-click cancels drawing mode
+    canvas.addEventListener('contextmenu', (e) => {
+        if (isDrawingMode) {
+            e.preventDefault();
+            stopDrawingMode();
+        }
+    });
+
+    // Keydown shortcuts: Escape to cancel, Enter to commit
+    window.addEventListener('keydown', (e) => {
+        if (!isDrawingMode) return;
+        if (e.key === 'Escape') {
+            stopDrawingMode();
+        } else if (e.key === 'Enter') {
+            if (currentDrawingPoints.length >= 2) {
+                commitDrawnBarrier();
+            }
         }
     });
     

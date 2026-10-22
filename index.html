@@ -91,13 +91,12 @@
                     </svg>
                     <span>Overview</span>
                 </button>
-                <div class="brand-bars">
-                    <span class="bar-orange"></span>
-                    <span class="bar-cyan"></span>
-                </div>
-                <div class="brand-text">
-                    <h1 class="brand-title">Hydroverse</h1>
-                    <span class="brand-sub">Clonmel, River Suir</span>
+                <div class="brand-nav-link" id="brand-nav-home" role="button" tabindex="0" title="Hydroverse Overview">
+                    <svg class="brand-mark brand-mark-nav" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                        <path d="M20 4.8C20 4.8 8.5 17.2 8.5 24.5a11.5 11.5 0 0 0 23 0C31.5 17.2 20 4.8 20 4.8Z" stroke="currentColor" stroke-width="1.5" />
+                        <path d="M13.3 25.7c2.6 2.2 5.4 3.3 8.1 3.1 2-.2 3.8-.9 5.4-2.2M15.8 19.8c1.4.7 2.8 1 4.3 1 1.5-.1 3-.5 4.4-1.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                    </svg>
+                    <span class="brand-nav-text">hydro<span class="brand-light">verse</span></span>
                 </div>
             </div>
             
@@ -225,6 +224,27 @@
                             <strong class="text-success">0.00 m (Dry Behind Wall)</strong>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- On-Canvas Drawing HUD Banner (appears during interactive map drawing) -->
+            <div id="drawing-hud-banner" class="drawing-hud-banner hidden" aria-live="polite">
+                <div class="hud-banner-left">
+                    <span class="hud-banner-pulse"></span>
+                    <span class="hud-banner-title" id="hud-banner-title">DRAWING FLOOD WALL ON MAP</span>
+                </div>
+                <div class="hud-banner-center" id="hud-banner-metrics">
+                    <span>Vertices: <strong id="hud-vertex-count">0</strong></span>
+                    <span class="hud-sep">•</span>
+                    <span>Length: <strong id="hud-length-count">0 m</strong></span>
+                    <span class="hud-sep">•</span>
+                    <span>Crest: <strong id="hud-crest-val">2.8m</strong></span>
+                    <span class="hud-sep">•</span>
+                    <span>Depth: <strong id="hud-depth-val">2.0m</strong></span>
+                </div>
+                <div class="hud-banner-right">
+                    <button id="hud-btn-finish" class="hud-btn-action success">Finish Barrier</button>
+                    <button id="hud-btn-cancel" class="hud-btn-action cancel">Cancel</button>
                 </div>
             </div>
 
@@ -445,6 +465,90 @@
                                 <span class="b-sub">Official Quay Walls & Bunds</span>
                             </div>
                         </button>
+                    </div>
+
+                    <!-- Wall / Sandbag Dimension & Drawing Controls -->
+                    <div id="barrier-config-panel" class="barrier-config-panel">
+                        <div class="config-section-title">
+                            <span id="barrier-spec-title">WALL SPECIFICATIONS</span>
+                            <span id="barrier-spec-badge" class="spec-badge">CONFIGURABLE</span>
+                        </div>
+
+                        <!-- Crest Height Slider & Number Input -->
+                        <div class="defense-slider-row">
+                            <div class="defense-slider-header">
+                                <label for="barrier-height-slider">
+                                    <span class="slider-title">Crest Height</span>
+                                    <span class="slider-subtitle">Elevation above ground / river surface</span>
+                                </label>
+                                <div class="val-input-wrap">
+                                    <input type="number" id="barrier-height-input" class="defense-num-input" min="0.4" max="5.0" step="0.1" value="2.8">
+                                    <span class="val-unit">m</span>
+                                </div>
+                            </div>
+                            <input type="range" id="barrier-height-slider" class="defense-range-slider" min="0.4" max="5.0" step="0.1" value="2.8">
+                            <div class="slider-limits">
+                                <span>0.4 m</span>
+                                <span id="barrier-height-mid">2.8 m</span>
+                                <span>5.0 m</span>
+                            </div>
+                        </div>
+
+                        <!-- Foundation Embedment Depth Slider & Number Input -->
+                        <div class="defense-slider-row">
+                            <div class="defense-slider-header">
+                                <label for="barrier-depth-slider">
+                                    <span class="slider-title">Foundation Embedment Depth</span>
+                                    <span class="slider-subtitle">Penetrates riverbed & ground (prevents leaks & float)</span>
+                                </label>
+                                <div class="val-input-wrap">
+                                    <input type="number" id="barrier-depth-input" class="defense-num-input" min="0.3" max="4.0" step="0.1" value="2.0">
+                                    <span class="val-unit">m</span>
+                                </div>
+                            </div>
+                            <input type="range" id="barrier-depth-slider" class="defense-range-slider" min="0.3" max="4.0" step="0.1" value="2.0">
+                            <div class="slider-limits">
+                                <span>0.3 m</span>
+                                <span id="barrier-depth-mid">2.0 m</span>
+                                <span>4.0 m</span>
+                            </div>
+                        </div>
+
+                        <!-- Barrier Thickness / Base Width Slider & Number Input -->
+                        <div class="defense-slider-row">
+                            <div class="defense-slider-header">
+                                <label for="barrier-thick-slider">
+                                    <span class="slider-title">Barrier Thickness</span>
+                                    <span class="slider-subtitle">Wall width or sandbag base footing</span>
+                                </label>
+                                <div class="val-input-wrap">
+                                    <input type="number" id="barrier-thick-input" class="defense-num-input" min="0.4" max="3.5" step="0.1" value="1.2">
+                                    <span class="val-unit">m</span>
+                                </div>
+                            </div>
+                            <input type="range" id="barrier-thick-slider" class="defense-range-slider" min="0.4" max="3.5" step="0.1" value="1.2">
+                        </div>
+
+                        <!-- Map Drawing Action Box -->
+                        <div class="map-draw-action-box">
+                            <button id="btn-start-drawing" class="btn-draw-map-main" type="button" title="Start drawing on 3D map">
+                                <span class="btn-draw-icon">✏️</span>
+                                <span id="btn-draw-text">Draw Wall on Map</span>
+                            </button>
+                            <div id="draw-active-actions" class="draw-active-actions hidden">
+                                <button id="btn-finish-barrier" class="btn-draw-finish" type="button" title="Deploy drawn barrier into hydrodynamic solver">
+                                    <span>🏁 Finish & Build (<span id="draw-vertex-count">0</span> pts)</span>
+                                </button>
+                                <button id="btn-cancel-barrier" class="btn-draw-cancel" type="button" title="Cancel drawing">
+                                    <span>✕</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="draw-live-instructions" class="draw-live-instructions hidden">
+                            <div class="draw-pulse-dot"></div>
+                            <span id="draw-instructions-text">Click along the bank or across water to place points. Double-click or click <b>Finish & Build</b> to deploy into simulation. Deep foundation anchors watertight into riverbed.</span>
+                        </div>
                     </div>
 
                     <!-- SuDS & Pump Infrastructure Toggles -->
