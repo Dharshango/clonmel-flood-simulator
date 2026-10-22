@@ -174,17 +174,21 @@ async function init() {
         });
     }
     
-    // Top Tabs & Panels (5 Workspaces)
+    // Top Tabs & Panels (7 Workspaces)
     const tabLive = document.getElementById('tab-live');
     const tabTime = document.getElementById('tab-time');
     const tabIntervention = document.getElementById('tab-intervention') || document.getElementById('tab-barrier');
     const tabImpact = document.getElementById('tab-impact');
+    const tabEvidence = document.getElementById('tab-evidence');
+    const tabExercise = document.getElementById('tab-exercise');
     const tabScience = document.getElementById('tab-science');
     
     const scenarioControlsView = document.getElementById('scenario-controls-view');
     const timeMachineView = document.getElementById('time-machine-view');
     const barrierStudioView = document.getElementById('barrier-studio-view');
     const impactIntelView = document.getElementById('impact-intel-view');
+    const communityEvidenceView = document.getElementById('community-evidence-view');
+    const commandExerciseView = document.getElementById('command-exercise-view');
     const scienceValidationView = document.getElementById('science-validation-view');
     const sideBySideOverlay = document.getElementById('side-by-side-overlay');
     
@@ -195,6 +199,8 @@ async function init() {
             time: tabTime,
             intervention: tabIntervention,
             impact: tabImpact,
+            evidence: tabEvidence,
+            exercise: tabExercise,
             science: tabScience
         },
         leftPanels: {
@@ -202,6 +208,8 @@ async function init() {
             time: timeMachineView,
             intervention: barrierStudioView,
             impact: impactIntelView,
+            evidence: communityEvidenceView,
+            exercise: commandExerciseView,
             science: scienceValidationView
         },
         overlayToggles: document.querySelectorAll('.overlay-toggle-btn'),
@@ -227,7 +235,10 @@ async function init() {
         interventionEngine,
         validationMetrics,
         analyticalOverlays,
-        barriersManager
+        barriersManager,
+        scene,
+        meta,
+        elevArray
     );
     
     // Side-by-Side Comparison Readouts (Unprotected Baseline vs Protected)
@@ -889,6 +900,7 @@ async function init() {
 
     // Physically Valid Time Seeker for Responsive Play Bar
     function applyScrubberTime(val) {
+        val = Math.max(0, Math.min(21600, val));
         simulator.seekTime(val);
         if (isSideBySide || AppState.currentWorkspace === 'intervention') {
             baselineSimulator.seekTime(val);
@@ -905,6 +917,14 @@ async function init() {
     }
 
     // Timeline Scrubber Interaction with physically valid hydrodynamic time-seeking
+    timelineScrubber.addEventListener('mousedown', () => {
+        isScrubbing = true;
+        setPlayState(false); // Pause forward loop during manual scrubbing so user can scrub backward cleanly
+    });
+    timelineScrubber.addEventListener('touchstart', () => {
+        isScrubbing = true;
+        setPlayState(false);
+    }, { passive: true });
     timelineScrubber.addEventListener('input', (e) => {
         isScrubbing = true;
         applyScrubberTime(parseFloat(e.target.value));
@@ -913,6 +933,90 @@ async function init() {
         isScrubbing = false;
         applyScrubberTime(parseFloat(e.target.value));
     });
+    window.addEventListener('mouseup', () => {
+        if (isScrubbing) {
+            isScrubbing = false;
+        }
+    });
+
+    // Step -10m and +10m Buttons (Instant 600-second timeline jumps)
+    const btnStepBack = document.getElementById('btn-step-back');
+    const btnStepFwd = document.getElementById('btn-step-fwd');
+    if (btnStepBack) {
+        btnStepBack.addEventListener('click', () => {
+            setPlayState(false);
+            const target = Math.max(0, simulator.totalSimTime - 600);
+            applyScrubberTime(target);
+        });
+    }
+    if (btnStepFwd) {
+        btnStepFwd.addEventListener('click', () => {
+            setPlayState(false);
+            const target = Math.min(21600, simulator.totalSimTime + 600);
+            applyScrubberTime(target);
+        });
+    }
+
+    // Citizen Evidence Submission Modal Wiring
+    const btnOpenSubmitEvidence = document.getElementById('btn-open-submit-evidence');
+    const evidenceSubmitModal = document.getElementById('evidence-submit-modal');
+    const btnCloseEvidenceModal = document.getElementById('btn-close-evidence-modal');
+    const btnCancelEvidence = document.getElementById('btn-cancel-evidence');
+    const evidenceSubmitForm = document.getElementById('evidence-submit-form');
+    const btnObsUsePin = document.getElementById('btn-obs-use-pin');
+
+    if (btnOpenSubmitEvidence && evidenceSubmitModal) {
+        btnOpenSubmitEvidence.addEventListener('click', () => {
+            evidenceSubmitModal.showModal();
+        });
+    }
+    const closeEvidenceModal = () => {
+        if (evidenceSubmitModal) evidenceSubmitModal.close();
+    };
+    if (btnCloseEvidenceModal) btnCloseEvidenceModal.addEventListener('click', closeEvidenceModal);
+    if (btnCancelEvidence) btnCancelEvidence.addEventListener('click', closeEvidenceModal);
+
+    if (btnObsUsePin) {
+        btnObsUsePin.addEventListener('click', () => {
+            if (selectedInspectUV) {
+                const latInput = document.getElementById('obs-lat');
+                const lonInput = document.getElementById('obs-lon');
+                const titleInput = document.getElementById('obs-title');
+                if (latInput) latInput.value = selectedInspectUV.lat.toFixed(4);
+                if (lonInput) lonInput.value = selectedInspectUV.lon.toFixed(4);
+                if (titleInput && selectedInspectUV.street) titleInput.value = `${selectedInspectUV.street} Observation`;
+            } else {
+                alert('Click anywhere on the 3D map first to pin a location.');
+            }
+        });
+    }
+
+    if (evidenceSubmitForm) {
+        evidenceSubmitForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const title = document.getElementById('obs-title')?.value || 'Field Observation';
+            const category = document.getElementById('obs-category')?.value || 'water_depth';
+            const depthM = parseFloat(document.getElementById('obs-depth')?.value || '0.25');
+            const lat = parseFloat(document.getElementById('obs-lat')?.value || '52.3538');
+            const lon = parseFloat(document.getElementById('obs-lon')?.value || '-7.7032');
+            const notes = document.getElementById('obs-desc')?.value || '';
+            const observer = document.getElementById('obs-observer')?.value || 'Clonmel Citizen';
+
+            workspaceManager.evidenceManager.submitReport({
+                title,
+                category,
+                depthM,
+                lat,
+                lon,
+                notes,
+                observer
+            });
+
+            closeEvidenceModal();
+            evidenceSubmitForm.reset();
+            workspaceManager.updateEvidenceView();
+        });
+    }
 
     // Milestone Scrubber Buttons
     document.querySelectorAll('.milestone-btn').forEach(btn => {

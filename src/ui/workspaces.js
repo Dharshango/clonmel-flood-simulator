@@ -1,18 +1,23 @@
 /**
  * workspaces.js
  * 
- * Controller and UI View Manager for the 5 Hydroverse Workspaces:
+ * Controller and UI View Manager for the 7 Hydroverse Workspaces:
  * 1. Live Flood Map
  * 2. Flood Time Machine
  * 3. Intervention Lab
- * 4. Impact Intelligence
- * 5. Science & Validation
+ * 4. Critical Infrastructure Dependency Map
+ * 5. Community Flood Evidence Network
+ * 6. Emergency Command Exercise
+ * 7. Science & Numerical SWE Validation
  */
 
 import { AppState } from './state.js';
+import { InfrastructureDependencyManager } from '../analysis/infrastructure_dependency.js';
+import { CommunityEvidenceManager } from '../evidence/community_evidence.js';
+import { EmergencyCommandExerciseManager } from '../exercise/command_exercise.js';
 
 export class WorkspaceManager {
-    constructor(elements, simulator, baselineSimulator, roadGraph, interventionEngine, validationMetrics, overlays, barriersManager) {
+    constructor(elements, simulator, baselineSimulator, roadGraph, interventionEngine, validationMetrics, overlays, barriersManager, scene, meta, elevArray) {
         this.elements = elements;
         this.simulator = simulator;
         this.baselineSimulator = baselineSimulator;
@@ -21,9 +26,20 @@ export class WorkspaceManager {
         this.validationMetrics = validationMetrics;
         this.overlays = overlays;
         this.barriersManager = barriersManager;
+        this.scene = scene;
+        this.meta = meta;
+        this.elevArray = elevArray;
         
-        // Depth-over-time hydrograph history buffer (up to 60 samples)
+        // Depth-over-time hydrograph history buffer (up to 75 samples)
         this.hydrographData = [];
+        
+        // Decision-Support Managers
+        this.infraManager = new InfrastructureDependencyManager(scene, meta, roadGraph);
+        this.evidenceManager = new CommunityEvidenceManager(scene, meta);
+        this.exerciseManager = new EmergencyCommandExerciseManager(scene, simulator, roadGraph, barriersManager, interventionEngine);
+        
+        // Active Filter States
+        this.evidenceActiveFilter = 'all';
         
         this.initEventListeners();
         this.updateView();
@@ -51,9 +67,7 @@ export class WorkspaceManager {
                     const isActive = toggle.classList.toggle('active');
                     AppState.setOverlay(overlayKey, isActive);
                     
-                    // Map overlay key to shader mode
                     if (!isActive) {
-                        // Check if any other overlay is active
                         let nextMode = 0;
                         if (AppState.overlays.depthHeatmap) nextMode = 1;
                         else if (AppState.overlays.arrivalTime) nextMode = 2;
@@ -62,7 +76,6 @@ export class WorkspaceManager {
                         else if (AppState.overlays.uncertainty) nextMode = 5;
                         this.overlays.setMode(nextMode);
                     } else {
-                        // Turn off mutually exclusive visual modes for clear rendering
                         overlayToggles.forEach(other => {
                             if (other !== toggle && other.dataset.overlay !== 'uncertainty') {
                                 other.classList.remove('active');
@@ -149,6 +162,70 @@ export class WorkspaceManager {
                 });
             }
         }
+
+        // 6. Infrastructure Category Filters (Feature 1)
+        const infraChips = document.querySelectorAll('.infra-chip');
+        infraChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                infraChips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                const cat = chip.dataset.filter;
+                this.infraManager.setFilter(cat);
+                this.updateInfraView();
+            });
+        });
+
+        // 7. Community Evidence Filters & Review Actions (Feature 2)
+        const evidenceChips = document.querySelectorAll('.evidence-chip');
+        evidenceChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                evidenceChips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                this.evidenceActiveFilter = chip.dataset.filter;
+                this.updateEvidenceView();
+            });
+        });
+
+        const btnEvVerify = document.getElementById('btn-ev-verify');
+        const btnEvReject = document.getElementById('btn-ev-reject');
+        if (btnEvVerify) {
+            btnEvVerify.addEventListener('click', () => {
+                if (this.evidenceManager.selectedReport) {
+                    this.evidenceManager.updateReportStatus(this.evidenceManager.selectedReport.id, 'verified', 'Clonmel Flood Ops', 'Benchmark verified via field gauge survey.');
+                    this.updateEvidenceView();
+                }
+            });
+        }
+        if (btnEvReject) {
+            btnEvReject.addEventListener('click', () => {
+                if (this.evidenceManager.selectedReport) {
+                    this.evidenceManager.updateReportStatus(this.evidenceManager.selectedReport.id, 'rejected', 'Clonmel Flood Ops', 'Residual exceeds acceptable hydraulic tolerance.');
+                    this.updateEvidenceView();
+                }
+            });
+        }
+
+        // 8. Emergency Command Exercise Navigation (Feature 3)
+        const btnAdvance = document.getElementById('btn-exercise-advance');
+        const btnRestart = document.getElementById('btn-exercise-restart');
+        if (btnAdvance) {
+            btnAdvance.addEventListener('click', () => {
+                const totalPhases = this.exerciseManager.scenario.phases.length;
+                if (this.exerciseManager.currentPhaseIdx >= totalPhases - 1) {
+                    this.showDebriefModal();
+                } else {
+                    this.exerciseManager.advancePhase();
+                    this.updateExerciseView();
+                }
+            });
+        }
+        if (btnRestart) {
+            btnRestart.addEventListener('click', () => {
+                this.exerciseManager.reset();
+                this.simulator.seekTime(0);
+                this.updateExerciseView();
+            });
+        }
     }
     
     setWorkspace(workspaceKey) {
@@ -166,7 +243,7 @@ export class WorkspaceManager {
     
     updateView() {
         const ws = AppState.currentWorkspace;
-        const { leftPanels, rightPanels, bottomElements } = this.elements;
+        const { leftPanels, rightPanels } = this.elements;
         
         // Show/hide corresponding left and right panel views
         if (leftPanels) {
@@ -180,8 +257,10 @@ export class WorkspaceManager {
             });
         }
         
-        // Workspace-specific initialization
+        // Workspace-specific 3D scene marker visibility & initialization
         if (ws === 'live') {
+            this.infraManager.setVisible(false);
+            this.evidenceManager.setVisible(false);
             let mode = 0;
             if (AppState.overlays.depthHeatmap) mode = 1;
             else if (AppState.overlays.arrivalTime) mode = 2;
@@ -190,19 +269,472 @@ export class WorkspaceManager {
             else if (AppState.overlays.uncertainty) mode = 5;
             this.overlays.setMode(mode);
         } else if (ws === 'time') {
+            this.infraManager.setVisible(false);
+            this.evidenceManager.setVisible(false);
             this.drawHydrographChart();
         } else if (ws === 'intervention') {
+            this.infraManager.setVisible(false);
+            this.evidenceManager.setVisible(false);
             this.updateInterventionUI();
             if (AppState.overlays.unintendedConsequences) {
                 this.overlays.setMode(4);
             }
         } else if (ws === 'impact') {
-            this.updateImpactView();
+            this.infraManager.setVisible(true);
+            this.evidenceManager.setVisible(false);
+            this.updateInfraView();
+        } else if (ws === 'evidence') {
+            this.infraManager.setVisible(false);
+            this.evidenceManager.setVisible(true);
+            this.updateEvidenceView();
+        } else if (ws === 'exercise') {
+            this.infraManager.setVisible(false);
+            this.evidenceManager.setVisible(false);
+            this.updateExerciseView();
         } else if (ws === 'science') {
+            this.infraManager.setVisible(false);
+            this.evidenceManager.setVisible(false);
             this.updateScienceView();
         }
         
         this.updateOverlayLegend();
+    }
+    
+    updateInfraView() {
+        if (!this.infraManager) return;
+        const evaluations = this.infraManager.update(this.simulator.totalSimTime, this.simulator);
+        
+        let accessibleCount = 0;
+        let cautionCount = 0;
+        let severedCount = 0;
+        
+        evaluations.forEach(ev => {
+            if (ev.status === 'PASSABLE') accessibleCount++;
+            else if (ev.status === 'CAUTION') cautionCount++;
+            else severedCount++;
+        });
+        
+        const elAcc = document.getElementById('infra-cnt-accessible');
+        const elCaut = document.getElementById('infra-cnt-caution');
+        const elSev = document.getElementById('infra-cnt-severed');
+        if (elAcc) elAcc.textContent = accessibleCount;
+        if (elCaut) elCaut.textContent = cautionCount;
+        if (elSev) elSev.textContent = severedCount;
+        
+        // Render facilities scroll list
+        const listEl = document.getElementById('infra-facilities-list');
+        if (listEl) {
+            const filter = this.infraManager.activeFilter;
+            const filtered = evaluations.filter(ev => filter === 'all' || ev.facility.category === filter);
+            const needsRebuild = !listEl.hasChildNodes() || this._lastInfraFilter !== filter || this._lastInfraSelectedId !== this.infraManager.selectedFacility?.id || listEl.children.length !== filtered.length;
+            
+            if (needsRebuild) {
+                this._lastInfraFilter = filter;
+                this._lastInfraSelectedId = this.infraManager.selectedFacility?.id;
+                listEl.innerHTML = filtered.map(ev => {
+                    const fac = ev.facility;
+                    const isSelected = this.infraManager.selectedFacility?.id === fac.id;
+                    let badgeClass = 'status-pill-green';
+                    if (ev.status === 'CAUTION') badgeClass = 'status-pill-amber';
+                    else if (ev.status === 'SEVERED' || ev.status === 'ISOLATED') badgeClass = 'status-pill-red';
+                    
+                    return `
+                        <div class="infra-facility-item ${isSelected ? 'selected' : ''}" data-fac-id="${fac.id}">
+                            <div class="fac-left">
+                                <span class="fac-icon">${fac.icon || '📍'}</span>
+                                <div class="fac-meta">
+                                    <span class="fac-title">${fac.shortName || fac.name}</span>
+                                    <span class="fac-road">${fac.ingressRoad}</span>
+                                </div>
+                            </div>
+                            <div class="fac-right">
+                                <span class="${badgeClass}">${ev.statusLabel}</span>
+                                <span class="fac-depth">${ev.directDepthM > 0.02 ? ev.directDepthM.toFixed(2) + 'm' : 'Dry'}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Wire facility clicks
+                listEl.querySelectorAll('.infra-facility-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const id = item.dataset.facId;
+                        this.infraManager.highlightDependencies(id);
+                        this._lastInfraSelectedId = id;
+                        this.updateInfraView();
+                    });
+                });
+            } else {
+                // Update in place without recreating nodes
+                filtered.forEach(ev => {
+                    const item = listEl.querySelector(`[data-fac-id="${ev.facility.id}"]`);
+                    if (item) {
+                        const badge = item.querySelector('.status-pill-green, .status-pill-amber, .status-pill-red');
+                        const depthEl = item.querySelector('.fac-depth');
+                        if (badge) {
+                            let badgeClass = 'status-pill-green';
+                            if (ev.status === 'CAUTION') badgeClass = 'status-pill-amber';
+                            else if (ev.status === 'SEVERED' || ev.status === 'ISOLATED') badgeClass = 'status-pill-red';
+                            badge.className = badgeClass;
+                            badge.textContent = ev.statusLabel;
+                        }
+                        if (depthEl) depthEl.textContent = ev.directDepthM > 0.02 ? ev.directDepthM.toFixed(2) + 'm' : 'Dry';
+                    }
+                });
+            }
+        }
+        
+        // Update selected facility deep-dive card
+        const selFac = this.infraManager.selectedFacility;
+        if (selFac) {
+            const selEval = evaluations.find(e => e.facility.id === selFac.id) || evaluations[0];
+            const nameEl = document.getElementById('infra-fac-name');
+            const badgeEl = document.getElementById('infra-fac-badge');
+            const elevEl = document.getElementById('infra-fac-elev');
+            const roadEl = document.getElementById('infra-fac-road');
+            const detourEl = document.getElementById('infra-fac-detour');
+            const cascadeEl = document.getElementById('infra-fac-cascade');
+            
+            if (nameEl) nameEl.textContent = selFac.name;
+            if (badgeEl) {
+                let badgeClass = 'status-pill-green';
+                if (selEval.status === 'CAUTION') badgeClass = 'status-pill-amber';
+                else if (selEval.status === 'SEVERED' || selEval.status === 'ISOLATED') badgeClass = 'status-pill-red';
+                badgeEl.className = badgeClass;
+                badgeEl.textContent = selEval.statusLabel;
+            }
+            if (elevEl) elevEl.textContent = `${selFac.elevationOD.toFixed(1)}m OD (${selEval.directDepthM > 0.02 ? selEval.directDepthM.toFixed(2) + 'm water' : 'Dry Site'})`;
+            if (roadEl) {
+                roadEl.textContent = `${selFac.ingressRoad} (${selEval.ingressMaxDepthM > 0.02 ? (selEval.ingressMaxDepthM * 100).toFixed(0) + 'cm water' : 'Clear'})`;
+                roadEl.style.color = selEval.ingressMaxDepthM >= 0.30 ? '#ef4444' : (selEval.ingressMaxDepthM >= 0.15 ? '#f59e0b' : '#34d399');
+            }
+            if (detourEl) detourEl.textContent = `${selFac.alternativeRoad} (+${selEval.detourDistKm.toFixed(1)} km detour)`;
+            if (cascadeEl) cascadeEl.textContent = selEval.cascadingImpact;
+        }
+    }
+    
+    updateEvidenceView() {
+        if (!this.evidenceManager) return;
+        const reports = this.evidenceManager.reports;
+        const activeFilter = this.evidenceActiveFilter || 'all';
+        
+        let verifiedCount = 0;
+        let residualSum = 0;
+        let residualCount = 0;
+        
+        reports.forEach(r => {
+            if (r.verificationStatus === 'verified') verifiedCount++;
+            const comp = this.evidenceManager.compareWithSimulation(r, this.simulator);
+            if (comp) {
+                residualSum += comp.residualDepthM;
+                residualCount++;
+            }
+        });
+        
+        const meanResidual = residualCount > 0 ? (residualSum / residualCount) : 0.05;
+        
+        const totalEl = document.getElementById('ev-stat-total');
+        const verEl = document.getElementById('ev-stat-verified');
+        const resEl = document.getElementById('ev-stat-residual');
+        if (totalEl) totalEl.textContent = reports.length;
+        if (verEl) verEl.textContent = verifiedCount;
+        if (resEl) resEl.textContent = `±${meanResidual.toFixed(2)}m`;
+        
+        // Populate reports feed
+        const listEl = document.getElementById('evidence-reports-list');
+        if (listEl) {
+            const filtered = reports.filter(r => {
+                const s = r.status || r.verificationStatus || 'verified';
+                if (activeFilter === 'all') return true;
+                if (activeFilter === 'verified') return s === 'verified';
+                if (activeFilter === 'pending') return s === 'pending_review' || s === 'under_review';
+                if (activeFilter === 'discrepant') return s === 'rejected';
+                return true;
+            });
+            
+            const needsRebuild = !listEl.hasChildNodes() || this._lastEvidenceFilter !== activeFilter || this._lastEvidenceReportsLen !== reports.length || this._lastEvidenceSelectedId !== this.evidenceManager.selectedReport?.id;
+            
+            if (needsRebuild) {
+                this._lastEvidenceFilter = activeFilter;
+                this._lastEvidenceReportsLen = reports.length;
+                this._lastEvidenceSelectedId = this.evidenceManager.selectedReport?.id;
+                
+                listEl.innerHTML = filtered.map(r => {
+                    const comp = this.evidenceManager.compareWithSimulation(r, this.simulator);
+                    const isSelected = this.evidenceManager.selectedReport?.id === r.id;
+                    const s = r.status || r.verificationStatus || 'verified';
+                    let statusBadge = 'status-pill-green';
+                    let statusLabel = 'VERIFIED';
+                    if (s === 'pending_review' || s === 'under_review') {
+                        statusBadge = 'status-pill-amber';
+                        statusLabel = 'PENDING';
+                    } else if (s === 'rejected') {
+                        statusBadge = 'status-pill-red';
+                        statusLabel = 'REJECTED';
+                    }
+                    const depthVal = r.reportedDepthM ?? r.depthM ?? 0;
+                    
+                    const simDepth = comp ? comp.simDepthM : 0.0;
+                    const resM = comp ? comp.residualM : 0.0;
+                    const agreementLabel = comp ? comp.agreement : 'COMPATIBLE';
+                    let compatClass = 'COMPATIBLE';
+                    if (resM <= 0.10) compatClass = 'EXACT';
+                    else if (resM > 0.25) compatClass = 'DISCREPANT';
+                    
+                    return `
+                        <div class="evidence-report-item ${isSelected ? 'selected' : ''}" data-report-id="${r.id}">
+                            <div class="ev-item-header">
+                                <span class="ev-item-title">${r.title}</span>
+                                <span class="${statusBadge}">${statusLabel}</span>
+                            </div>
+                            <div class="ev-item-meta">
+                                <span>Obs: <strong>${depthVal.toFixed(2)}m</strong></span>
+                                <span>Sim: <strong style="color:#38bdf8;">${simDepth.toFixed(2)}m</strong></span>
+                                <span class="ev-compat-pill ${compatClass}">${agreementLabel}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                listEl.querySelectorAll('.evidence-report-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const repId = item.dataset.reportId;
+                        const r = this.evidenceManager.reports.find(x => x.id === repId);
+                        if (r) {
+                            this.evidenceManager.selectedReport = r;
+                            this._lastEvidenceSelectedId = r.id;
+                            this.updateEvidenceView();
+                        }
+                    });
+                });
+            }
+        }
+        
+        // Populate selected report card
+        const selRep = this.evidenceManager.selectedReport || reports[0];
+        if (selRep) {
+            const comp = this.evidenceManager.compareWithSimulation(selRep, this.simulator);
+            const titleEl = document.getElementById('ev-card-title');
+            const badgeEl = document.getElementById('ev-card-badge');
+            const repDepthEl = document.getElementById('ev-card-reported-depth');
+            const simDepthEl = document.getElementById('ev-card-sim-depth');
+            const resValEl = document.getElementById('ev-card-residual-val');
+            const resFillEl = document.getElementById('ev-card-residual-fill');
+            const notesEl = document.getElementById('ev-card-notes');
+            
+            const repStatus = selRep.status || selRep.verificationStatus || 'verified';
+            const repDepthVal = selRep.reportedDepthM ?? selRep.depthM ?? 0;
+            const simDepthVal = comp ? comp.simDepthM : 0.0;
+            const resVal = comp ? comp.residualM : 0.0;
+            const agreementText = comp ? comp.agreement : 'COMPATIBLE';
+            
+            if (titleEl) titleEl.textContent = selRep.title;
+            if (badgeEl) {
+                let badgeClass = 'status-pill-green';
+                if (repStatus === 'pending_review' || repStatus === 'under_review') badgeClass = 'status-pill-amber';
+                else if (repStatus === 'rejected') badgeClass = 'status-pill-red';
+                badgeEl.className = badgeClass;
+                badgeEl.textContent = repStatus.toUpperCase().replace('_', ' ');
+            }
+            if (repDepthEl) repDepthEl.textContent = `${repDepthVal.toFixed(2)} m`;
+            if (simDepthEl) simDepthEl.textContent = `${simDepthVal.toFixed(2)} m`;
+            if (resValEl) resValEl.textContent = `${resVal.toFixed(2)} m (${agreementText})`;
+            if (resFillEl) {
+                const fillPct = Math.min(100, (resVal / 0.50) * 100);
+                resFillEl.style.width = `${fillPct}%`;
+                resFillEl.className = `residual-bar-fill ${resVal <= 0.15 ? 'good' : 'bad'}`;
+            }
+            if (notesEl) notesEl.textContent = `${selRep.description || selRep.notes || ''} [Observer: ${selRep.observer || 'Citizen Observer'}]`;
+        }
+    }
+    
+    updateExerciseView() {
+        if (!this.exerciseManager) return;
+        const phase = this.exerciseManager.getCurrentPhase();
+        const phaseIdx = this.exerciseManager.currentPhaseIdx;
+        const totalPhases = this.exerciseManager.scenario.phases.length;
+        
+        const badgeEl = document.getElementById('exercise-phase-badge');
+        const clockEl = document.getElementById('exercise-clock-text');
+        const inflowEl = document.getElementById('exercise-inflow-text');
+        const titleEl = document.getElementById('exercise-phase-title');
+        const descEl = document.getElementById('exercise-phase-desc');
+        
+        if (badgeEl) badgeEl.textContent = `PHASE ${phaseIdx + 1} OF ${totalPhases}`;
+        if (clockEl) clockEl.textContent = `T+${phase.clockTime}`;
+        if (inflowEl) inflowEl.textContent = `Inflow: ${phase.riverInflow} m³/s`;
+        if (titleEl) titleEl.textContent = phase.phaseName || phase.title || `Phase ${phaseIdx + 1}`;
+        if (descEl) descEl.textContent = phase.brief || phase.scenarioDesc || '';
+        
+        // Update resources
+        const res = this.exerciseManager.resources;
+        const crewsEl = document.getElementById('res-crews');
+        const pumpsEl = document.getElementById('res-pumps');
+        const sandbagsEl = document.getElementById('res-sandbags');
+        const trafficEl = document.getElementById('res-traffic');
+        const boatsEl = document.getElementById('res-boats');
+        
+        if (crewsEl) crewsEl.textContent = res.barrierCrews ?? 0;
+        if (pumpsEl) pumpsEl.textContent = (res.pumps15ms ?? res.drainagePumps ?? 0);
+        if (sandbagsEl) sandbagsEl.textContent = (res.sandbagUnits ?? res.sandbagStockpiles ?? 0);
+        if (trafficEl) trafficEl.textContent = (res.trafficTeams ?? res.trafficUnits ?? 0);
+        if (boatsEl) boatsEl.textContent = res.rescueCraft ?? 0;
+        
+        // Populate tactical actions
+        const actionsListEl = document.getElementById('exercise-actions-list');
+        if (actionsListEl) {
+            const needsRebuild = !actionsListEl.hasChildNodes() || this._lastExercisePhaseIdx !== phaseIdx;
+            
+            if (needsRebuild) {
+                this._lastExercisePhaseIdx = phaseIdx;
+                actionsListEl.innerHTML = phase.actions.map(action => {
+                    const canAfford = this.exerciseManager.canExecuteAction(action);
+                    const costChips = action.cost ? Object.entries(action.cost).map(([k, v]) => `<span class="res-cost-chip">${v} ${k}</span>`).join(' ') : '<span class="res-cost-chip free">Free</span>';
+                    
+                    return `
+                        <div class="exercise-action-card">
+                            <div class="action-top">
+                                <span class="action-name">${action.name}</span>
+                                <div class="action-costs">${costChips}</div>
+                            </div>
+                            <p class="action-consequence">${action.consequence}</p>
+                            <button class="btn-execute-action ${canAfford ? 'primary-button' : 'btn-disabled'}" data-action-id="${action.id}" ${canAfford ? '' : 'disabled'}>
+                                <span class="button-label">${canAfford ? 'Execute Command' : 'Insufficient Resources'}</span>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+                
+                actionsListEl.querySelectorAll('.btn-execute-action').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const actionId = btn.dataset.actionId;
+                        const res = this.exerciseManager.executeAction(actionId);
+                        if (res.success) {
+                            this.updateExerciseView();
+                        } else {
+                            alert(res.message);
+                        }
+                    });
+                });
+            } else {
+                // Update button disabled state in place
+                actionsListEl.querySelectorAll('.btn-execute-action').forEach(btn => {
+                    const actionId = btn.dataset.actionId;
+                    const action = phase.actions.find(a => a.id === actionId);
+                    if (action) {
+                        const canAfford = this.exerciseManager.canExecuteAction(action);
+                        btn.disabled = !canAfford;
+                        btn.className = `btn-execute-action ${canAfford ? 'primary-button' : 'btn-disabled'}`;
+                        const label = btn.querySelector('.button-label');
+                        if (label) label.textContent = canAfford ? 'Execute Command' : 'Insufficient Resources';
+                    }
+                });
+            }
+        }
+        
+        // Populate ledger
+        const ledgerEl = document.getElementById('exercise-decision-ledger');
+        const ledgerCountEl = document.getElementById('exercise-ledger-count');
+        const ledger = this.exerciseManager.decisionLedger;
+        if (ledgerCountEl) ledgerCountEl.textContent = ledger.length;
+        if (ledgerEl) {
+            if (ledger.length === 0) {
+                ledgerEl.innerHTML = `<div class="ledger-empty">No tactical commands executed yet in this scenario.</div>`;
+            } else {
+                ledgerEl.innerHTML = ledger.map(item => `
+                    <div class="ledger-entry">
+                        <div class="ledger-entry-head">
+                            <span class="ledger-clock">T+${item.clockTime}</span>
+                            <span class="ledger-name">${item.actionName}</span>
+                        </div>
+                        <span class="ledger-cons">${item.consequence}</span>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        // Update Advance Button
+        const advanceLbl = document.getElementById('btn-advance-label');
+        if (advanceLbl) {
+            if (phaseIdx < totalPhases - 1) {
+                const nextPhase = this.exerciseManager.scenario.phases[phaseIdx + 1];
+                advanceLbl.textContent = `Advance to Phase ${phaseIdx + 2} (T+${nextPhase.clockTime}) →`;
+            } else {
+                advanceLbl.textContent = `Conclude Exercise & View After-Action Debrief 🏁`;
+            }
+        }
+    }
+    
+    showDebriefModal() {
+        const modal = document.getElementById('exercise-debrief-modal');
+        const contentEl = document.getElementById('debrief-modal-content');
+        if (!modal || !contentEl) return;
+        
+        const debrief = this.exerciseManager.getDebriefReport();
+        
+        contentEl.innerHTML = `
+            <div class="debrief-hero-box">
+                <div class="debrief-score-circle">
+                    <span class="score-val">${debrief.totalScore}</span>
+                    <span class="score-max">/ 100</span>
+                </div>
+                <div class="debrief-rating-block">
+                    <span class="rating-badge">${debrief.ratingBadge}</span>
+                    <h4 class="rating-title">${debrief.rating}</h4>
+                    <p class="rating-desc">${debrief.assessment}</p>
+                </div>
+            </div>
+
+            <div class="debrief-pillars-grid">
+                <div class="pillar-card">
+                    <span class="pillar-lbl">Situational Info Review</span>
+                    <strong class="pillar-score">${debrief.breakdown.infoReview}</strong>
+                </div>
+                <div class="pillar-card">
+                    <span class="pillar-lbl">Resource Discipline</span>
+                    <strong class="pillar-score">${debrief.breakdown.resourceMgmt}</strong>
+                </div>
+                <div class="pillar-card">
+                    <span class="pillar-lbl">Infrastructure Preservation</span>
+                    <strong class="pillar-score">${debrief.breakdown.preservation}</strong>
+                </div>
+                <div class="pillar-card">
+                    <span class="pillar-lbl">Intervention Timeliness</span>
+                    <strong class="pillar-score">${debrief.breakdown.timeliness}</strong>
+                </div>
+            </div>
+
+            <div class="debrief-ledger-section">
+                <span class="ledger-sec-title">Decision Audit Log (${debrief.decisionCount} Actions Executed)</span>
+                <div class="debrief-ledger-list">
+                    ${debrief.ledger.map(d => `
+                        <div class="debrief-log-row">
+                            <span class="log-time">T+${d.clockTime}</span>
+                            <span class="log-action">${d.actionName}</span>
+                            <span class="log-consequence">${d.consequence}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        
+        modal.showModal();
+        
+        const closeBtn = document.getElementById('btn-close-debrief-modal');
+        const closeBtnBottom = document.getElementById('btn-debrief-close');
+        const restartBtn = document.getElementById('btn-debrief-restart');
+        
+        const closeModal = () => modal.close();
+        if (closeBtn) closeBtn.onclick = closeModal;
+        if (closeBtnBottom) closeBtnBottom.onclick = closeModal;
+        if (restartBtn) {
+            restartBtn.onclick = () => {
+                modal.close();
+                this.exerciseManager.reset();
+                this.simulator.seekTime(0);
+                this.updateExerciseView();
+            };
+        }
     }
     
     updateOverlayLegend() {
@@ -217,7 +749,6 @@ export class WorkspaceManager {
         
         legendEl.classList.remove('hidden');
         if (mode === 1) {
-            // Depth Heatmap Legend
             legendEl.innerHTML = `
                 <div class="legend-header"><span>DEPTH HEATMAP</span><span class="legend-unit">Meters (m)</span></div>
                 <div class="legend-bar depth-gradient"></div>
@@ -228,7 +759,6 @@ export class WorkspaceManager {
                 </div>
             `;
         } else if (mode === 2) {
-            // Arrival Time Legend
             legendEl.innerHTML = `
                 <div class="legend-header"><span>FLOOD ARRIVAL TIME</span><span class="legend-unit">Hours</span></div>
                 <div class="legend-bar arrival-gradient"></div>
@@ -239,7 +769,6 @@ export class WorkspaceManager {
                 </div>
             `;
         } else if (mode === 3) {
-            // Duration Legend
             legendEl.innerHTML = `
                 <div class="legend-header"><span>FLOOD DURATION</span><span class="legend-unit">Hours Submerged</span></div>
                 <div class="legend-bar duration-gradient"></div>
@@ -250,7 +779,6 @@ export class WorkspaceManager {
                 </div>
             `;
         } else if (mode === 4) {
-            // Unintended Consequences / Difference
             legendEl.innerHTML = `
                 <div class="legend-header"><span>INTERVENTION SPATIAL DIFFERENCE</span></div>
                 <div class="legend-split-row">
@@ -259,7 +787,6 @@ export class WorkspaceManager {
                 </div>
             `;
         } else if (mode === 5) {
-            // Uncertainty
             legendEl.innerHTML = `
                 <div class="legend-header"><span>HYDRAULIC UNCERTAINTY ENVELOPE</span></div>
                 <div class="legend-labels">
@@ -298,7 +825,6 @@ export class WorkspaceManager {
             eventDesc = 'Largest modern unmitigated flood event prior to the Clonmel Flood Relief Scheme. Over 350 properties severely flooded.';
         }
         
-        // Update simulation parameters
         this.simulator.params.riverInflow = inflow;
         this.simulator.params.rainRate = rain;
         this.simulator.params.downstreamSurge = surge;
@@ -306,18 +832,9 @@ export class WorkspaceManager {
         this.baselineSimulator.params.rainRate = rain;
         this.baselineSimulator.params.downstreamSurge = surge;
         
-        // Reset and trigger simulation
         this.simulator.reset();
         this.baselineSimulator.reset();
         this.hydrographData = [];
-        
-        // Update UI info card
-        const cardTitle = document.getElementById('hist-event-title');
-        const cardDesc = document.getElementById('hist-event-desc');
-        const cardInflow = document.getElementById('hist-inflow-val');
-        if (cardTitle) cardTitle.textContent = eventName;
-        if (cardDesc) cardDesc.textContent = eventDesc;
-        if (cardInflow) cardInflow.textContent = `${inflow} m³/s`;
     }
     
     applyStoryStep(stepIdx) {
@@ -333,28 +850,21 @@ export class WorkspaceManager {
         if (descEl) descEl.textContent = step.desc;
         if (numEl) numEl.textContent = `Step ${stepIdx + 1} of ${steps.length}`;
         
-        // Perform corresponding automated simulation action
         if (stepIdx === 0) {
-            // Baseline 55 m³/s
             this.simulator.params.riverInflow = 55;
             this.simulator.reset();
             this.barriersManager.clearAll();
         } else if (stepIdx === 1) {
-            // Storm surge 450 m³/s
             this.simulator.params.riverInflow = 450;
             this.simulator.reset();
         } else if (stepIdx === 2) {
-            // Fast forward to 01:30 overtopping
             this.simulator.totalSimTime = 5400;
         } else if (stepIdx === 3) {
-            // Show Impact intelligence workspace
             this.setWorkspace('impact');
         } else if (stepIdx === 4) {
-            // Deploy Quay walls & Intervention Lab
             this.setWorkspace('intervention');
             this.barriersManager.loadPresets(null);
         } else if (stepIdx === 5) {
-            // Show outcome comparison
             this.setWorkspace('time');
         }
         
@@ -383,39 +893,6 @@ export class WorkspaceManager {
         if (scProtRate) scProtRate.textContent = `${scorecard.outcomes.protectionRatePct}%`;
         if (scResilience) scResilience.textContent = `${scorecard.outcomes.resilienceIndex} / 100`;
         if (scDeployTime) scDeployTime.textContent = `${scorecard.outcomes.deploymentTimeHrs} hrs`;
-    }
-    
-    updateImpactView() {
-        const roadAnalysis = this.roadGraph.analyze(this.simulator);
-        if (!roadAnalysis) return;
-        
-        const hospStatus = document.getElementById('impact-hospital-status');
-        const hospBadge = document.getElementById('impact-hospital-badge');
-        const hospDist = document.getElementById('impact-hospital-dist');
-        const roadsCutoffKm = document.getElementById('impact-roads-km');
-        const roadsCutoffCount = document.getElementById('impact-roads-count');
-        const sectorIsland = document.getElementById('sector-suir-island');
-        const sectorQuay = document.getElementById('sector-the-quay');
-        const sectorOldBridge = document.getElementById('sector-old-bridge');
-        
-        if (hospBadge && hospStatus) {
-            if (roadAnalysis.hospital.accessible) {
-                hospBadge.className = 'status-pill-green';
-                hospBadge.textContent = 'ACCESSIBLE';
-                hospStatus.textContent = roadAnalysis.hospital.routeCondition;
-            } else {
-                hospBadge.className = 'status-pill-red';
-                hospBadge.textContent = 'SEVERED';
-                hospStatus.textContent = roadAnalysis.hospital.routeCondition;
-            }
-        }
-        if (hospDist) hospDist.textContent = `${roadAnalysis.hospital.distanceKm > 0 ? roadAnalysis.hospital.distanceKm : 1.4} km`;
-        if (roadsCutoffKm) roadsCutoffKm.textContent = `${roadAnalysis.totalFloodedKm} km`;
-        if (roadsCutoffCount) roadsCutoffCount.textContent = roadAnalysis.floodedEdgesCount;
-        
-        if (sectorIsland) sectorIsland.textContent = roadAnalysis.sectors.suirIslandCutoff ? 'ISOLATED' : 'Connected';
-        if (sectorQuay) sectorQuay.textContent = roadAnalysis.sectors.quayCutoff ? 'INUNDATED' : 'Protected';
-        if (sectorOldBridge) sectorOldBridge.textContent = roadAnalysis.sectors.oldBridgeCutoff ? 'CUT OFF' : 'Passable';
     }
     
     updateScienceView() {
@@ -455,7 +932,6 @@ export class WorkspaceManager {
         
         ctx.clearRect(0, 0, w, h);
         
-        // Background gridlines
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.07)';
         ctx.lineWidth = 1;
         ctx.beginPath();
@@ -472,14 +948,12 @@ export class WorkspaceManager {
             return;
         }
         
-        // Find max depth for scaling
         let maxDepth = 0.5;
         for (const pt of this.hydrographData) {
             if (pt.depthM > maxDepth) maxDepth = pt.depthM;
         }
         maxDepth = Math.max(1.0, maxDepth * 1.25);
         
-        // Draw depth curve
         ctx.beginPath();
         for (let i = 0; i < this.hydrographData.length; i++) {
             const pt = this.hydrographData[i];
@@ -489,11 +963,10 @@ export class WorkspaceManager {
             else ctx.lineTo(x, y);
         }
         
-        ctx.strokeStyle = '#38bdf8'; // Cyan line
+        ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 2.2;
         ctx.stroke();
         
-        // Fill area under curve
         const lastX = w - 10;
         ctx.lineTo(lastX, h - 10);
         ctx.lineTo(10, h - 10);
@@ -504,7 +977,6 @@ export class WorkspaceManager {
         ctx.fillStyle = grad;
         ctx.fill();
         
-        // Current depth readout
         const currentDepth = this.hydrographData[this.hydrographData.length - 1].depthM;
         ctx.fillStyle = '#38bdf8';
         ctx.font = 'bold 12px "JetBrains Mono", monospace';

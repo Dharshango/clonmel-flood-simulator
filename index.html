@@ -100,7 +100,7 @@
                 </div>
             </div>
             
-            <!-- Center Tabs: 5 Interconnected Workspaces -->
+            <!-- Center Tabs: 7 Decision-Support Workspaces -->
             <nav class="header-modes center-modes" aria-label="Simulation Workspaces">
                 <button id="tab-live" class="mode-tab active" title="Workspace 1: Live Flood Map & Calibrated Overlays">
                     Live Map
@@ -111,10 +111,16 @@
                 <button id="tab-intervention" class="mode-tab" title="Workspace 3: Intervention Lab, SuDS & Pumps">
                     Intervention Lab
                 </button>
-                <button id="tab-impact" class="mode-tab" title="Workspace 4: Impact Intelligence & Hospital Access">
-                    Impact Intel
+                <button id="tab-impact" class="mode-tab" title="Workspace 4: Critical Infrastructure Dependency Map">
+                    Infrastructure Impact
                 </button>
-                <button id="tab-science" class="mode-tab" title="Workspace 5: Science & Numerical SWE Validation">
+                <button id="tab-evidence" class="mode-tab" title="Workspace 5: Community Flood Evidence Network">
+                    Community Evidence
+                </button>
+                <button id="tab-exercise" class="mode-tab" title="Workspace 6: Emergency Command Exercise">
+                    Command Exercise
+                </button>
+                <button id="tab-science" class="mode-tab" title="Workspace 7: Science & Numerical SWE Validation">
                     Science & Validation
                 </button>
             </nav>
@@ -600,78 +606,265 @@
                     </div>
                 </div>
 
-                <!-- WORKSPACE 4: Impact Intelligence View -->
+                <!-- WORKSPACE 4: Critical Infrastructure Dependency Map View -->
                 <div id="impact-intel-view" class="hidden">
                     <div class="panel-header">
-                        <span class="panel-title">IMPACT INTELLIGENCE</span>
+                        <span class="panel-title">CRITICAL INFRASTRUCTURE DEPENDENCY MAP</span>
                         <span class="pill-tag">Graph Analytics</span>
                     </div>
 
                     <p class="barrier-guide-hint">
-                        Topological connectivity across 6,638 buildings and 2,067 road segments with emergency accessibility.
+                        Topological connectivity across 11 critical Clonmel facilities and 2,067 road segments with cascading outage propagation.
                     </p>
 
-                    <!-- South Tipperary General Hospital Access Card -->
-                    <div class="hospital-access-card">
+                    <!-- Category Filter Chips -->
+                    <div class="infra-filter-chips">
+                        <button class="infra-chip active" data-filter="all">All (11)</button>
+                        <button class="infra-chip" data-filter="healthcare">🏥 Health</button>
+                        <button class="infra-chip" data-filter="emergency">🚒 Emergency</button>
+                        <button class="infra-chip" data-filter="utilities">⚡ Utilities</button>
+                        <button class="infra-chip" data-filter="crossing">🌉 Bridges</button>
+                        <button class="infra-chip" data-filter="education">🏫 Schools</button>
+                    </div>
+
+                    <!-- Facility Network Status Overview Counters -->
+                    <div class="infra-counters-row">
+                        <div class="infra-counter-pill green">
+                            <span class="cnt-num" id="infra-cnt-accessible">11</span>
+                            <span class="cnt-lbl">Accessible</span>
+                        </div>
+                        <div class="infra-counter-pill amber">
+                            <span class="cnt-num" id="infra-cnt-caution">0</span>
+                            <span class="cnt-lbl">Caution/Detour</span>
+                        </div>
+                        <div class="infra-counter-pill red">
+                            <span class="cnt-num" id="infra-cnt-severed">0</span>
+                            <span class="cnt-lbl">Severed/Cut-Off</span>
+                        </div>
+                    </div>
+
+                    <!-- Selected Facility Deep-Dive Card -->
+                    <div id="infra-selected-card" class="hospital-access-card">
                         <div class="hosp-header">
-                            <span class="hosp-title">South Tipperary General Hospital</span>
-                            <span id="impact-hospital-badge" class="status-pill-green">ACCESSIBLE</span>
+                            <span class="hosp-title" id="infra-fac-name">South Tipperary General Hospital (STGH)</span>
+                            <span id="infra-fac-badge" class="status-pill-green">ACCESSIBLE</span>
                         </div>
                         <div class="station-readouts-grid">
                             <div class="station-readout-item">
-                                <span class="st-lbl">Route Distance:</span>
-                                <span id="impact-hospital-dist" class="st-val">1.4 km</span>
+                                <span class="st-lbl">Elevation & Ground:</span>
+                                <span id="infra-fac-elev" class="st-val">23.4m OD (Dry)</span>
                             </div>
                             <div class="station-readout-item">
-                                <span class="st-lbl">Bypass Passage:</span>
-                                <span class="st-val" style="color: #34d399;">Clear</span>
+                                <span class="st-lbl">Primary Ingress Road:</span>
+                                <span id="infra-fac-road" class="st-val" style="color:#34d399;">Western Road</span>
                             </div>
                         </div>
-                        <span id="impact-hospital-status" class="hosp-condition-text">Emergency corridor clear along Western Road & bypass.</span>
-                    </div>
-
-                    <!-- Disrupted Road Network Summary -->
-                    <div class="station-card">
-                        <div class="station-header">
-                            <span class="station-title">Road Network Disruption (>15cm)</span>
+                        <div class="infra-detail-section">
+                            <span class="infra-detail-lbl">Alternative Detour Route:</span>
+                            <span id="infra-fac-detour" class="infra-detail-val">Heywood Road / Cashel Bypass (+0.8 km)</span>
                         </div>
-                        <div class="station-readouts-grid">
-                            <div class="station-readout-item">
-                                <span class="st-lbl">Flooded Road Length:</span>
-                                <span id="impact-roads-km" class="st-val">0.00 km</span>
-                            </div>
-                            <div class="station-readout-item">
-                                <span class="st-lbl">Severed Segments:</span>
-                                <span id="impact-roads-count" class="st-val">0</span>
-                            </div>
+                        <div class="infra-detail-section">
+                            <span class="infra-detail-lbl">Cascading Service Dependency:</span>
+                            <span id="infra-fac-cascade" class="infra-detail-val text-amber">Ambulance transfers dependent on West Gate corridor passability.</span>
+                        </div>
+                        <div class="infra-provenance-foot">
+                            <span>Source: HSE & OSM #484277716 • BD 97/12 & HSE Standards</span>
                         </div>
                     </div>
 
-                    <!-- Critical Isolated Sectors -->
-                    <div class="panel-header" style="margin-top: 6px;">
-                        <span class="panel-title">SECTOR ISOLATION STATUS</span>
+                    <!-- Facilities Scrollable List -->
+                    <div class="panel-header" style="margin-top: 8px;">
+                        <span class="panel-title">MONITORED INFRASTRUCTURE FACILITIES</span>
                     </div>
-                    <div class="isolated-sectors-grid">
-                        <div class="sector-item">
-                            <span class="sec-name">Suir Island</span>
-                            <span id="sector-suir-island" class="sec-status">Connected</span>
-                        </div>
-                        <div class="sector-item">
-                            <span class="sec-name">The Quay</span>
-                            <span id="sector-the-quay" class="sec-status">Protected</span>
-                        </div>
-                        <div class="sector-item">
-                            <span class="sec-name">Old Bridge</span>
-                            <span id="sector-old-bridge" class="sec-status">Passable</span>
-                        </div>
-                        <div class="sector-item">
-                            <span class="sec-name">Irishtown</span>
-                            <span class="sec-status" style="color:#34d399;">Passable</span>
+                    <div id="infra-facilities-list" class="infra-facilities-scroll-list">
+                        <!-- Populated dynamically by InfrastructureDependencyManager -->
+                    </div>
+
+                    <!-- Road Passability Standards Reference -->
+                    <div class="passability-criteria-box">
+                        <span class="crit-title">PASSABILITY STANDARDS (BD 97/12 & HSE)</span>
+                        <div class="crit-items">
+                            <span><strong style="color:#34d399;">&lt;0.15m:</strong> Passable (All vehicles)</span>
+                            <span><strong style="color:#f59e0b;">0.15–0.30m:</strong> Caution (High-clearance emergency only)</span>
+                            <span><strong style="color:#ef4444;">&ge;0.30m:</strong> Impassable (Severed / Risk of vehicle stall)</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- WORKSPACE 5: Science & Validation View -->
+                <!-- WORKSPACE 5: Community Flood Evidence Network View -->
+                <div id="community-evidence-view" class="hidden">
+                    <div class="panel-header">
+                        <span class="panel-title">COMMUNITY FLOOD EVIDENCE NETWORK</span>
+                        <span class="pill-tag">Citizen Science</span>
+                    </div>
+
+                    <p class="barrier-guide-hint">
+                        Geotagged ground truth observations, calibrated flood marks, and historical flood telemetry for real-time model validation.
+                    </p>
+
+                    <!-- Filter Chips -->
+                    <div class="infra-filter-chips">
+                        <button class="evidence-chip active" data-filter="all">All Reports</button>
+                        <button class="evidence-chip" data-filter="verified">✓ Verified</button>
+                        <button class="evidence-chip" data-filter="pending">⏳ Pending Review</button>
+                        <button class="evidence-chip" data-filter="discrepant">⚠️ Discrepant</button>
+                    </div>
+
+                    <!-- Network Stats Banner -->
+                    <div class="evidence-stats-banner">
+                        <div class="ev-stat-item">
+                            <span class="ev-stat-num" id="ev-stat-total">7</span>
+                            <span class="ev-stat-lbl">Ground Marks</span>
+                        </div>
+                        <div class="ev-stat-item">
+                            <span class="ev-stat-num" id="ev-stat-verified" style="color:#34d399;">5</span>
+                            <span class="ev-stat-lbl">Verified Truth</span>
+                        </div>
+                        <div class="ev-stat-item">
+                            <span class="ev-stat-num" id="ev-stat-residual" style="color:#38bdf8;">&plusmn;0.05m</span>
+                            <span class="ev-stat-lbl">SWE Residual RMS</span>
+                        </div>
+                    </div>
+
+                    <!-- Action: Submit New Ground Observation -->
+                    <button id="btn-open-submit-evidence" class="primary-button" style="width: 100%; height: 34px; justify-content: center; margin-top: 6px;" type="button">
+                        <span class="button-label">+ Submit Ground Observation</span>
+                    </button>
+
+                    <!-- Selected Report Comparison Card -->
+                    <div id="evidence-selected-card" class="hospital-access-card" style="margin-top: 8px;">
+                        <div class="hosp-header">
+                            <span class="hosp-title" id="ev-card-title">The Quay / Old Bridge Gauging Point</span>
+                            <span id="ev-card-badge" class="status-pill-green">VERIFIED</span>
+                        </div>
+                        <div class="station-readouts-grid">
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Reported Ground Depth:</span>
+                                <span id="ev-card-reported-depth" class="st-val">0.65 m</span>
+                            </div>
+                            <div class="station-readout-item">
+                                <span class="st-lbl">SWE Simulated Depth:</span>
+                                <span id="ev-card-sim-depth" class="st-val" style="color:#38bdf8;">0.62 m</span>
+                            </div>
+                        </div>
+                        <!-- Depth Residual Gauge -->
+                        <div class="residual-gauge-wrap">
+                            <div class="residual-header">
+                                <span>SIMULATION RESIDUAL (&Delta;h):</span>
+                                <strong id="ev-card-residual-val">0.03 m (EXACT MATCH)</strong>
+                            </div>
+                            <div class="residual-bar-track">
+                                <div id="ev-card-residual-fill" class="residual-bar-fill good" style="width: 15%;"></div>
+                            </div>
+                        </div>
+                        <div class="infra-detail-section">
+                            <span class="infra-detail-lbl">Field Observation Notes:</span>
+                            <span id="ev-card-notes" class="infra-detail-val">Water overtopped the low parapet wall and reached ground floor commercial thresholds. High water mark verified by surveyor gauge.</span>
+                        </div>
+                        <!-- Reviewer Workflow Actions -->
+                        <div class="evidence-reviewer-actions">
+                            <button id="btn-ev-verify" class="btn-sub success" type="button">✓ Verify as Benchmark</button>
+                            <button id="btn-ev-reject" class="btn-sub danger" type="button">✕ Flag Discrepancy</button>
+                        </div>
+                    </div>
+
+                    <!-- Reports Feed List -->
+                    <div class="panel-header" style="margin-top: 8px;">
+                        <span class="panel-title">GROUND EVIDENCE FEED</span>
+                    </div>
+                    <div id="evidence-reports-list" class="evidence-scroll-list">
+                        <!-- Populated dynamically by CommunityEvidenceManager -->
+                    </div>
+                </div>
+
+                <!-- WORKSPACE 6: Interactive Emergency Command Exercise View -->
+                <div id="command-exercise-view" class="hidden">
+                    <div class="panel-header">
+                        <span class="panel-title">EMERGENCY COMMAND EXERCISE</span>
+                        <span id="exercise-phase-badge" class="pill-tag">PHASE 1 OF 5</span>
+                    </div>
+
+                    <!-- Scenario Briefing Card -->
+                    <div class="exercise-brief-card">
+                        <div class="ex-brief-top">
+                            <span class="ex-clock-pill" id="exercise-clock-text">T+00:00 (Onset)</span>
+                            <span class="ex-river-inflow" id="exercise-inflow-text">Inflow: 450 m³/s</span>
+                        </div>
+                        <h4 class="ex-brief-title" id="exercise-phase-title">Phase 1: Initial Briefing & Telemetry Audit</h4>
+                        <p class="ex-brief-desc" id="exercise-phase-desc">OPW station 16011 reports Suir rising rapidly at 0.35m/hr. River is bankfull. Coordinate initial defenses before flood crest reaches the town center.</p>
+                    </div>
+
+                    <!-- Finite Resource Inventory Bar -->
+                    <div class="panel-header" style="margin-top: 6px;">
+                        <span class="panel-title">DEPLOYABLE RESOURCE INVENTORY</span>
+                    </div>
+                    <div class="resource-inventory-grid">
+                        <div class="resource-badge" title="Barrier Deployment Crews">
+                            <span class="res-icon">👷</span>
+                            <div class="res-info">
+                                <span class="res-count" id="res-crews">4</span>
+                                <span class="res-name">Crews</span>
+                            </div>
+                        </div>
+                        <div class="resource-badge" title="15 m³/s High-Capacity Pumps">
+                            <span class="res-icon">⚙️</span>
+                            <div class="res-info">
+                                <span class="res-count" id="res-pumps">3</span>
+                                <span class="res-name">Pumps</span>
+                            </div>
+                        </div>
+                        <div class="resource-badge" title="Sandbag Stockpiles (1000 bags each)">
+                            <span class="res-icon">🛡️</span>
+                            <div class="res-info">
+                                <span class="res-count" id="res-sandbags">6</span>
+                                <span class="res-name">Sandbags</span>
+                            </div>
+                        </div>
+                        <div class="resource-badge" title="Garda & Traffic Control Units">
+                            <span class="res-icon">🚓</span>
+                            <div class="res-info">
+                                <span class="res-count" id="res-traffic">5</span>
+                                <span class="res-name">Traffic</span>
+                            </div>
+                        </div>
+                        <div class="resource-badge" title="Civil Defence Inflatable Rescue Boats">
+                            <span class="res-icon">🚤</span>
+                            <div class="res-info">
+                                <span class="res-count" id="res-boats">2</span>
+                                <span class="res-name">Boats</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tactical Decision Actions Stack -->
+                    <div class="panel-header" style="margin-top: 6px;">
+                        <span class="panel-title">AVAILABLE TACTICAL ACTIONS</span>
+                    </div>
+                    <div id="exercise-actions-list" class="exercise-actions-stack">
+                        <!-- Populated dynamically by EmergencyCommandExerciseManager -->
+                    </div>
+
+                    <!-- Decision Ledger & Phase Controls -->
+                    <div class="panel-header" style="margin-top: 8px;">
+                        <span class="panel-title">INCIDENT LOG (CHRONOLOGICAL LEDGER)</span>
+                        <span id="exercise-ledger-count" class="count-badge">0</span>
+                    </div>
+                    <div id="exercise-decision-ledger" class="exercise-ledger-box">
+                        <div class="ledger-empty">No tactical commands executed yet in this scenario.</div>
+                    </div>
+
+                    <!-- Advance Phase Button -->
+                    <div class="exercise-nav-bar" style="margin-top: 8px;">
+                        <button id="btn-exercise-advance" class="primary-button" style="width: 100%; height: 38px; justify-content: center;" type="button">
+                            <span class="button-label" id="btn-advance-label">Advance to Phase 2 (T+01:15) →</span>
+                        </button>
+                        <button id="btn-exercise-restart" class="btn-sub" style="width: 100%; justify-content: center; margin-top: 4px;" type="button">
+                            <span>↺ Reset Exercise</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- WORKSPACE 7: Science & Validation View -->
                 <div id="science-validation-view" class="hidden">
                     <div class="panel-header">
                         <span class="panel-title">SCIENCE & VALIDATION</span>
@@ -847,8 +1040,11 @@
 
             <!-- Floating Sleek Pill Playback Bar (Matches User Reference Image 4) -->
             <footer id="bottom-playback-bar" class="floating-pill-bar">
-                <!-- Play Button & Embedded Reset Button inside Bottom Bar -->
+                <!-- Play Button, Step -10m / +10m Buttons & Embedded Reset Button inside Bottom Bar -->
                 <div class="play-reset-cluster">
+                    <button id="btn-step-back" class="btn-step-time" title="Step Back 10 Minutes (-10m)">
+                        <span>-10m</span>
+                    </button>
                     <button id="btn-play-pause" class="btn-play-circle-white" title="Play / Pause Simulation">
                         <svg id="icon-play" class="hidden" viewBox="0 0 24 24" width="16" height="16" fill="#0b111a">
                             <polygon points="6 4 20 12 6 20 6 4"/>
@@ -857,6 +1053,9 @@
                             <rect x="6" y="4" width="4" height="16"/>
                             <rect x="14" y="4" width="4" height="16"/>
                         </svg>
+                    </button>
+                    <button id="btn-step-fwd" class="btn-step-time" title="Step Forward 10 Minutes (+10m)">
+                        <span>+10m</span>
                     </button>
                     <button id="btn-bar-reset" class="btn-bar-reset" title="Reset Simulation">
                         ↺ Reset
@@ -978,6 +1177,102 @@
                 </div>
                 <div id="inspect-hazard-badge" class="hazard-tag safe">Normal</div>
             </div>
+
+            <!-- Citizen Ground Evidence Submission Modal -->
+            <dialog id="evidence-submit-modal" class="custom-dialog-modal">
+                <div class="dialog-card-inner">
+                    <div class="dialog-header-row">
+                        <div class="dialog-title-group">
+                            <span class="dialog-pill">COMMUNITY EVIDENCE NETWORK</span>
+                            <h3 class="dialog-title">Submit Field Observation</h3>
+                        </div>
+                        <button id="btn-close-evidence-modal" class="dialog-close-btn" type="button" aria-label="Close">×</button>
+                    </div>
+                    <p class="dialog-subtext">Submit ground-truthed flood depths, wrack marks, or road cutoffs to calibrate and benchmark the Clonmel hydrodynamic simulation model.</p>
+                    
+                    <form id="evidence-submit-form" class="evidence-form">
+                        <div class="form-row">
+                            <label for="obs-title">Location / Landmark Name</label>
+                            <input type="text" id="obs-title" class="form-input" placeholder="e.g. Suir Island Footbridge north abutment" required>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-row">
+                                <label for="obs-category">Observation Category</label>
+                                <select id="obs-category" class="form-select">
+                                    <option value="water_depth">Water Depth (Ground gauge / Kerb)</option>
+                                    <option value="road_impassable">Road Cutoff / Vehicular Hazard</option>
+                                    <option value="building_ingress">Building Ingress Water</option>
+                                    <option value="bridge_clearance">Bridge Soffit Clearance</option>
+                                    <option value="defense_leak">Defense Barrier Leak / Overtopping</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <label for="obs-depth">Observed Water Depth (m)</label>
+                                <input type="number" id="obs-depth" class="form-input" min="0.0" max="4.0" step="0.05" value="0.25" required>
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-row">
+                                <label for="obs-lat">Latitude (°N)</label>
+                                <input type="number" id="obs-lat" class="form-input mono" min="52.345" max="52.365" step="0.0001" value="52.3538" required>
+                            </div>
+                            <div class="form-row">
+                                <label for="obs-lon">Longitude (°W)</label>
+                                <input type="number" id="obs-lon" class="form-input mono" min="-7.735" max="-7.675" step="0.0001" value="-7.7032" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <button type="button" id="btn-obs-use-pin" class="btn-sub" style="width: 100%; justify-content: center;">
+                                <span>📍 Use Current Map Inspector Coordinates</span>
+                            </button>
+                        </div>
+
+                        <div class="form-row">
+                            <label for="obs-desc">Description & Field Notes</label>
+                            <textarea id="obs-desc" class="form-textarea" rows="2" placeholder="e.g. Water reached commercial shopfront sill; verified against calibrated kerb gauge." required></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <label for="obs-observer">Observer Name / Agency</label>
+                            <input type="text" id="obs-observer" class="form-input" placeholder="e.g. Clonmel Civil Defence Volunteer" value="Clonmel Community Observer">
+                        </div>
+
+                        <div class="dialog-actions-row">
+                            <button type="button" id="btn-cancel-evidence" class="btn-sub">Cancel</button>
+                            <button type="submit" class="primary-button">
+                                <span class="button-label">Submit for Verification</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+
+            <!-- Command Exercise After-Action Operational Debrief Modal -->
+            <dialog id="exercise-debrief-modal" class="custom-dialog-modal debrief-dialog">
+                <div class="dialog-card-inner">
+                    <div class="dialog-header-row">
+                        <div class="dialog-title-group">
+                            <span class="dialog-pill success">AFTER-ACTION DEBRIEF</span>
+                            <h3 class="dialog-title">Clonmel Emergency Command Evaluation</h3>
+                        </div>
+                        <button id="btn-close-debrief-modal" class="dialog-close-btn" type="button" aria-label="Close">×</button>
+                    </div>
+                    
+                    <div id="debrief-modal-content" class="debrief-modal-content">
+                        <!-- Populated dynamically by EmergencyCommandExerciseManager -->
+                    </div>
+
+                    <div class="dialog-actions-row" style="margin-top: 14px;">
+                        <button type="button" id="btn-debrief-close" class="btn-sub">Close Review</button>
+                        <button type="button" id="btn-debrief-restart" class="primary-button">
+                            <span class="button-label">↺ Restart Command Exercise</span>
+                        </button>
+                    </div>
+                </div>
+            </dialog>
         </main>
     </div>
 

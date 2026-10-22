@@ -1,17 +1,19 @@
 /**
  * state.js
  * 
- * Centralized Shared State Management across all 5 Hydroverse Workspaces:
+ * Centralized Shared State Management across all 7 Hydroverse Workspaces:
  * 1. Live Flood Map
  * 2. Flood Time Machine
  * 3. Intervention Lab
- * 4. Impact Intelligence
- * 5. Science & Validation
+ * 4. Critical Infrastructure Dependency Map
+ * 5. Community Flood Evidence Network
+ * 6. Emergency Command Exercise
+ * 7. Science & Validation
  */
 
 export const AppState = {
     // Current Active Workspace
-    currentWorkspace: 'live', // 'live' | 'time' | 'intervention' | 'impact' | 'science'
+    currentWorkspace: 'live', // 'live' | 'time' | 'intervention' | 'impact' | 'evidence' | 'exercise' | 'science'
     
     // Simulation Scenario
     scenario: 'flood100', // 'normal' | 'flood100' | 'surge' | 'custom'
