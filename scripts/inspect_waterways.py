@@ -7,13 +7,20 @@ with open('public/data/terrain.json') as f:
 with open('public/data/waterways.json') as f:
     waterways = json.load(f)
 
-with open('public/data/elevation.bin', 'rb') as f:
-    elev = np.frombuffer(f.read(), dtype=np.float32).reshape((meta['grid_h'], meta['grid_w']))
+BBOX = meta['bbox']
+w_deg = BBOX['east'] - BBOX['west']
+h_deg = BBOX['north'] - BBOX['south']
+GRID_W, GRID_H = meta['grid_w'], meta['grid_h']
 
-print(f"Loaded elevation {elev.shape}")
-print(f"Number of waterways: {len(waterways)}")
-for w in waterways:
+def to_grid(lon, lat):
+    return (lon - BBOX['west']) / w_deg * GRID_W, (BBOX['north'] - lat) / h_deg * GRID_H
+
+for i, w in enumerate(waterways):
+    pts = [to_grid(p[0], p[1]) for p in w['pts']]
+    min_x = min(p[0] for p in pts)
+    max_x = max(p[0] for p in pts)
+    min_y = min(p[1] for p in pts)
+    max_y = max(p[1] for p in pts)
     name = w.get('name')
     wtype = w.get('type')
-    n_pts = len(w.get('pts', []))
-    print(f"Waterway: {name}, type={wtype}, points={n_pts}")
+    print(f"[{i:02d}] {name} ({wtype}) -> X: {min_x:5.1f}..{max_x:5.1f}, Y: {min_y:5.1f}..{max_y:5.1f}")

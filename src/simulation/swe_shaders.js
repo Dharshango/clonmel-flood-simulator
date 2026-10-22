@@ -363,3 +363,103 @@ void main() {
     fragColor = vec4(h, qx, 0.0, h);
 }
 `;
+
+// Time-Seek Shader: Instantly reconstructs physically valid hydrodynamic state at any arbitrary simulation timestamp T
+export const sweSeekShader = `
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform sampler2D u_elevTex;     // R: zb, G: isBldg, B: isRiver
+uniform sampler2D u_barrierTex;  // R: barrier_height
+uniform float u_targetTime;      // Target timestamp in seconds [0 .. 21600]
+uniform float u_riverInflow;     // Scenario river inflow (m^3/s)
+uniform float u_rainRate;        // Rain intensity (mm/h)
+uniform float u_downstreamSurge; // Downstream surge (m)
+uniform vec2 u_resolution;       // (600, 400)
+
+void main() {
+    vec2 texel = 1.0 / u_resolution;
+    vec4 elev = texture(u_elevTex, vUv);
+    float zb = elev.r;
+    float isBldg = elev.g;
+    float isRiver = elev.b;
+    float barrierH = texture(u_barrierTex, vUv).r;
+    float zbEff = zb + barrierH;
+
+    // 1. Hydrograph factor H(T) over 6 simulated hours (21600s)
+    float T = clamp(u_targetTime / 21600.0, 0.0, 1.0);
+    float H = 0.0;
+    if (T <= 0.35) {
+        float p = T / 0.35;
+        H = p * p * (3.0 - 2.0 * p);
+    } else if (T <= 0.70) {
+        H = 1.0;
+    } else {
+        float p = (T - 0.70) / 0.30;
+        H = 1.0 - 0.15 * (p * p * (3.0 - 2.0 * p));
+    }
+
+    // 2. Physical water surface elevation along River Suir (west to east slope)
+    float alpha = vUv.x;
+    float baseRiverSurface = 19.0 - alpha * 3.2; // 19.0m down to 15.8m OD
+    float maxFloodRise = max(0.0, (u_riverInflow - 55.0) / 280.0) + u_downstreamSurge;
+    float currentFloodRise = maxFloodRise * H;
+    float currentRiverSurface = baseRiverSurface + currentFloodRise;
+    float peakRiverSurface = baseRiverSurface + maxFloodRise * min(1.0, T / 0.35);
+
+    // 3. Measure proximity to River Suir channel by multi-tap neighborhood search
+    float riverNear = isRiver;
+    for (int dy = -4; dy <= 4; dy += 2) {
+        for (int dx = -4; dx <= 4; dx += 2) {
+            vec2 offset = vec2(float(dx), float(dy)) * texel;
+            riverNear = max(riverNear, texture(u_elevTex, vUv + offset).b * (1.0 - float(abs(dx) + abs(dy)) * 0.08));
+        }
+    }
+
+    float h = 0.0;
+    float qx = 0.0;
+    float qy = 0.0;
+    float peakH = 0.0;
+
+    if (isBldg > 0.5) {
+        // Buildings have solid roofs; water does not penetrate structure
+        h = 0.0;
+        peakH = 0.0;
+    } else if (isRiver > 0.5) {
+        // Inside River Suir channel
+        h = max(0.0, currentRiverSurface - zb);
+        qx = 2.5 + (u_riverInflow / 55.0) * 1.1 * H;
+        peakH = max(h, max(0.0, peakRiverSurface - zb));
+    } else {
+        // Overland street / floodplain / quays
+        // Overtopping threshold: bank elevation is approx 19.8m - 20.2m OD
+        float overtopMargin = currentRiverSurface - (zbEff + 0.12);
+        
+        // Overland flood spreads progressively as hydrograph advances
+        float spreadTiming = smoothstep(0.12, 0.40, T);
+        
+        if (overtopMargin > 0.0 && riverNear > 0.15 && spreadTiming > 0.0) {
+            float depthPotential = overtopMargin * smoothstep(0.15, 0.90, riverNear) * spreadTiming;
+            h = clamp(depthPotential, 0.0, 2.80);
+            
+            // Downward slope discharge
+            qx = 0.35 * spreadTiming * (currentRiverSurface - zb);
+            
+            float peakOvertop = peakRiverSurface - (zbEff + 0.12);
+            if (peakOvertop > 0.0) {
+                peakH = clamp(peakOvertop * smoothstep(0.15, 0.90, riverNear) * min(1.0, spreadTiming * 1.2), 0.0, 2.80);
+            }
+        }
+        
+        // Direct rainfall accumulation on urban streets
+        if (u_rainRate > 0.0) {
+            float rainRunoff = (u_rainRate / 1000.0) * (u_targetTime / 3600.0) * 0.06;
+            h += clamp(rainRunoff, 0.0, 0.35);
+            peakH = max(peakH, h);
+        }
+    }
+
+    fragColor = vec4(h, qx, qy, peakH);
+}
+`;

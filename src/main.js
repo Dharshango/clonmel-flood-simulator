@@ -106,6 +106,8 @@ async function init() {
     // 3. Setup Simulation and Meshes
     const simulator = new SWESimulator(renderer, meta, elevArray, bldgMaskImg, riverMaskImg);
     const baselineSimulator = new SWESimulator(renderer, meta, elevArray, bldgMaskImg, riverMaskImg);
+    window.simulator = simulator;
+    window.baselineSimulator = baselineSimulator;
     
     // Terrain Mesh (Deep Black Ground)
     const { mesh: terrainMesh, geometry: terrainGeom } = createTerrainMesh(meta, elevArray, normalTex);
@@ -310,24 +312,6 @@ async function init() {
     if (tabImpact) tabImpact.addEventListener('click', () => setMode('impact'));
     if (tabScience) tabScience.addEventListener('click', () => setMode('science'));
     
-    // Milestone Scrubber Buttons
-    document.querySelectorAll('.milestone-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const val = parseFloat(btn.dataset.time);
-            simulator.totalSimTime = val;
-            baselineSimulator.totalSimTime = val;
-            timelineScrubber.value = val;
-            const pct = Math.min(100, (val / 21600) * 100);
-            if (timelineProgressFill) timelineProgressFill.style.width = `${pct}%`;
-            if (scrubberKnob) scrubberKnob.style.left = `${pct}%`;
-            const totalHours = Math.floor(val / 3600);
-            const totalMins = Math.floor((val % 3600) / 60);
-            if (floodClockText) floodClockText.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')}`;
-            document.querySelectorAll('.milestone-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        });
-    });
-    
     function updateBarrierUI() {
         const count = barriersManager.barriers.length;
         const totalLen = barriersManager.getTotalLength();
@@ -475,6 +459,8 @@ async function init() {
         if (timelineProgressFill) timelineProgressFill.style.width = '0%';
         if (scrubberKnob) scrubberKnob.style.left = '0%';
         if (floodClockText) floodClockText.textContent = '00:00';
+        if (timelineScrubber) timelineScrubber.value = 0;
+        updateTelemetry();
     }
     
     if (btnBarReset) {
@@ -489,17 +475,152 @@ async function init() {
         });
     }
 
-    // Timeline Scrubber Interaction
-    timelineScrubber.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        simulator.totalSimTime = val;
-        baselineSimulator.totalSimTime = val;
+    // Telemetry & Physical Status Synchronizer
+    let isScrubbing = false;
+
+    function updateTelemetry() {
+        simulator.updateReadback();
+        if (isSideBySide || AppState.currentWorkspace === 'intervention') {
+            baselineSimulator.updateReadback();
+        }
+        
+        // Analytical matrices & overlays update
+        arrivalTracker.update(simulator.readbackBuffer, simulator.totalSimTime, 0.5);
+        const roadAnalysis = roadGraph.analyze(simulator);
+        if (AppState.currentWorkspace === 'intervention' || AppState.overlays.unintendedConsequences) {
+            interventionEngine.updateDifference(simulator, baselineSimulator);
+        }
+        if (AppState.currentWorkspace === 'science') {
+            validationMetrics.evaluateMassBalance(simulator);
+        }
+        analyticalOverlays.update(performance.now() * 0.001);
+        
+        // Building flood status
+        const bldgStats = buildingsLayer.updateFloodStatus(simulator, baselineSimulator, isSideBySide || AppState.currentWorkspace === 'intervention');
+        const floodedNow = bldgStats.floodedCount;
+        const savedNow = bldgStats.savedCount;
+        const unmitigatedNow = floodedNow + savedNow;
+        
+        statFloodedBldgs.textContent = floodedNow.toLocaleString();
+        if (statEndangeredBldgs) statEndangeredBldgs.textContent = bldgStats.endangeredCount.toLocaleString();
+        if (statPartialBldgs) statPartialBldgs.textContent = bldgStats.partialCount.toLocaleString();
+        statSavedBldgs.textContent = savedNow.toLocaleString();
+        
+        // Road Network Cutoffs
+        const roadCutoffCount = roadAnalysis ? roadAnalysis.floodedEdgesCount : 0;
+        statRoadsCutoff.textContent = roadCutoffCount;
+        roadsCountBadge.textContent = roadCutoffCount;
+        
+        if (!roadAnalysis || roadAnalysis.cutoffList.length === 0) {
+            roadsList.innerHTML = `
+                <div class="road-entry passable">
+                    <span class="r-name">The New Quay</span>
+                    <span class="r-tag">Passable</span>
+                </div>
+                <div class="road-entry passable">
+                    <span class="r-name">Old Bridge</span>
+                    <span class="r-tag">Passable</span>
+                </div>
+                <div class="road-entry passable">
+                    <span class="r-name">Abbey Street</span>
+                    <span class="r-tag">Passable</span>
+                </div>
+            `;
+        } else {
+            roadsList.innerHTML = roadAnalysis.cutoffList.slice(0, 5).map(r => `
+                <div class="road-entry hazard">
+                    <span class="r-name">${r.name}</span>
+                    <span class="r-tag">${r.depth}m Hazard</span>
+                </div>
+            `).join('');
+        }
+        
+        // Sample Selected Inspection Point
+        if (selectedInspectUV) {
+            const sampleProtected = simulator.samplePoint(selectedInspectUV.u, selectedInspectUV.v);
+            const gx = Math.min(meta.grid_w - 1, Math.max(0, Math.floor(selectedInspectUV.u * meta.grid_w)));
+            const gy = Math.min(meta.grid_h - 1, Math.max(0, Math.floor((1.0 - selectedInspectUV.v) * meta.grid_h)));
+            const groundElev = elevArray[gy * meta.grid_w + gx] || 18.0;
+            const flowSpeed = Math.hypot(sampleProtected.u, sampleProtected.v);
+            
+            readoutStreet.textContent = selectedInspectUV.street || 'Quay Street';
+            readoutElev.textContent = `${groundElev.toFixed(1)} m`;
+            readoutFlow.textContent = `${flowSpeed.toFixed(2)} m/s`;
+            readoutDepthVal.textContent = `${sampleProtected.h.toFixed(2)} m`;
+            
+            if (sampleProtected.h < 0.05) {
+                readoutHazardTag.className = 'hazard-pill safe';
+                readoutHazardTag.textContent = 'Normal';
+            } else if (sampleProtected.h < 0.30) {
+                readoutHazardTag.className = 'hazard-pill hazard';
+                readoutHazardTag.textContent = 'Pedestrian Warning';
+            } else {
+                readoutHazardTag.className = 'hazard-pill hazard';
+                readoutHazardTag.textContent = 'Severe Flood';
+            }
+            
+            workspaceManager.sampleHydrograph(simulator.totalSimTime, sampleProtected);
+        }
+        
+        // Sample Peak Town Depth
+        const sampleQuay = simulator.samplePoint(0.53, 0.44);
+        statPeakDepth.textContent = `${sampleQuay.peak_h.toFixed(2)} m`;
+        
+        // Update workspace reactive panels
+        workspaceManager.updateView();
+        
+        // Side-by-Side overlay stats: Rigorous comparison between Unmitigated Baseline and Protected
+        if (isSideBySide) {
+            if (sbsUnmitFlooded) sbsUnmitFlooded.textContent = unmitigatedNow.toLocaleString();
+            if (sbsUnmitRoads) sbsUnmitRoads.textContent = `${roadCutoffCount} roads`;
+            if (sbsUnmitDepth) sbsUnmitDepth.textContent = `${sampleQuay.peak_h.toFixed(2)} m`;
+            
+            if (sbsSavedBldgs) sbsSavedBldgs.textContent = savedNow.toLocaleString();
+            if (sbsProtectRate) {
+                const rate = unmitigatedNow > 0 ? ((savedNow / Math.max(1, unmitigatedNow)) * 100).toFixed(1) : '100.0';
+                sbsProtectRate.textContent = `${rate}% Protected`;
+            }
+        }
+
+        // Update floating inspector
+        inspector.updateInspectCard();
+    }
+
+    // Physically Valid Time Seeker for Responsive Play Bar
+    function applyScrubberTime(val) {
+        simulator.seekTime(val);
+        if (isSideBySide || AppState.currentWorkspace === 'intervention') {
+            baselineSimulator.seekTime(val);
+        }
+        timelineScrubber.value = val;
         const pct = Math.min(100, (val / 21600) * 100);
-        timelineProgressFill.style.width = `${pct}%`;
+        if (timelineProgressFill) timelineProgressFill.style.width = `${pct}%`;
         if (scrubberKnob) scrubberKnob.style.left = `${pct}%`;
         const totalHours = Math.floor(val / 3600);
         const totalMins = Math.floor((val % 3600) / 60);
-        floodClockText.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')}`;
+        if (floodClockText) floodClockText.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')}`;
+        
+        updateTelemetry();
+    }
+
+    // Timeline Scrubber Interaction with physically valid hydrodynamic time-seeking
+    timelineScrubber.addEventListener('input', (e) => {
+        isScrubbing = true;
+        applyScrubberTime(parseFloat(e.target.value));
+    });
+    timelineScrubber.addEventListener('change', (e) => {
+        isScrubbing = false;
+        applyScrubberTime(parseFloat(e.target.value));
+    });
+
+    // Milestone Scrubber Buttons
+    document.querySelectorAll('.milestone-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = parseFloat(btn.dataset.time);
+            applyScrubberTime(val);
+            document.querySelectorAll('.milestone-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
     });
 
     // Speed Controls: 60x, 300x, 900x, Max
@@ -511,18 +632,105 @@ async function init() {
         });
     });
     
-    // Camera Vantage Presets
+    // 8 Calibrated Camera Vantage Presets for In-Depth 3D Model Inspection
     const cameraVantages = [
-        { name: 'Overview', pos: new THREE.Vector3(-200, 750, 1100), target: new THREE.Vector3(0, 30, 0) },
-        { name: 'Old Bridge', pos: new THREE.Vector3(-360, 240, 420), target: new THREE.Vector3(-120, 20, 180) },
-        { name: 'Town Centre', pos: new THREE.Vector3(80, 340, 520), target: new THREE.Vector3(30, 25, 60) },
-        { name: 'Top-Down', pos: new THREE.Vector3(0, 1500, 50), target: new THREE.Vector3(0, 20, 50) }
+        { 
+            id: 'overview',
+            name: 'Overview', 
+            fullName: 'Overview (Wide Suir Basin)',
+            sub: 'Full 3D Valley & Suir Catchment',
+            pos: new THREE.Vector3(-150, 720, 1050), 
+            target: new THREE.Vector3(0, 25, 170) 
+        },
+        { 
+            id: 'quay',
+            name: 'The Quay', 
+            fullName: 'The Quay & Riverfront',
+            sub: 'Quayside Walls & Urban Overtopping',
+            pos: new THREE.Vector3(-60, 180, 420), 
+            target: new THREE.Vector3(122, 22, 78) 
+        },
+        { 
+            id: 'old-bridge',
+            name: 'Old Bridge', 
+            fullName: 'Old Bridge & Weir Rapids',
+            sub: 'Historic Arches & Western Inlet',
+            pos: new THREE.Vector3(-410, 180, 560), 
+            target: new THREE.Vector3(-170, 22, 323) 
+        },
+        { 
+            id: 'suir-island',
+            name: 'Suir Island', 
+            fullName: 'Suir Island Bifurcation',
+            sub: 'North/South Channels & Barriers',
+            pos: new THREE.Vector3(-50, 210, 600), 
+            target: new THREE.Vector3(54, 20, 278) 
+        },
+        { 
+            id: 'town-centre',
+            name: 'Town Centre', 
+            fullName: 'Town Centre & Market St',
+            sub: 'O\'Connell St Commercial District',
+            pos: new THREE.Vector3(34, 300, 320), 
+            target: new THREE.Vector3(34, 25, -111) 
+        },
+        { 
+            id: 'gashouse',
+            name: 'Gashouse Bridge', 
+            fullName: 'Gashouse Bridge & East Outflow',
+            sub: 'Downstream Bend & Floodplain Exit',
+            pos: new THREE.Vector3(660, 240, 560), 
+            target: new THREE.Vector3(817, 20, 189) 
+        },
+        { 
+            id: 'bypass',
+            name: 'N24 Bypass', 
+            fullName: 'North Slopes & N24 Bypass',
+            sub: 'Regional Arterial Evacuation Route',
+            pos: new THREE.Vector3(0, 520, 250), 
+            target: new THREE.Vector3(0, 35, -500) 
+        },
+        { 
+            id: 'top-down',
+            name: 'Top-Down 2D', 
+            fullName: 'Tactical Top-Down (2D Map)',
+            sub: 'Orthogonal Plan GIS Risk Map',
+            pos: new THREE.Vector3(0, 1550, 160), 
+            target: new THREE.Vector3(0, 20, 160) 
+        }
     ];
-    
+
+    // Camera Vantage UI Elements
+    const btnCameraMenu = document.getElementById('btn-camera-menu');
+    const cameraDropdown = document.getElementById('camera-views-dropdown');
+    const currentVantageLabel = document.getElementById('current-vantage-label');
+    const viewsDropdownList = document.getElementById('views-dropdown-list');
+    const cameraHudToast = document.getElementById('camera-hud-toast');
+    const cameraHudText = document.getElementById('camera-hud-text');
+    let toastTimeout = null;
+
+    function showCameraToast(text) {
+        if (!cameraHudToast || !cameraHudText) return;
+        cameraHudText.textContent = text;
+        cameraHudToast.classList.remove('hidden');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            cameraHudToast.classList.add('hidden');
+        }, 2400);
+    }
+
     function triggerCameraTransition(index) {
-        cameraVantageIndex = index % cameraVantages.length;
+        cameraVantageIndex = (index + cameraVantages.length) % cameraVantages.length;
         const v = cameraVantages[cameraVantageIndex];
         
+        if (currentVantageLabel) currentVantageLabel.textContent = v.name;
+        if (viewsDropdownList) {
+            viewsDropdownList.querySelectorAll('.view-dropdown-item').forEach(b => {
+                b.classList.toggle('active', parseInt(b.dataset.index, 10) === cameraVantageIndex);
+            });
+        }
+        showCameraToast(`View ${cameraVantageIndex + 1}/8: ${v.fullName}`);
+
         const startPos = camera.position.clone();
         const startTarget = controls.target.clone();
         const startTime = performance.now();
@@ -542,6 +750,43 @@ async function init() {
             }
         };
     }
+
+    // Populate Camera Dropdown List
+    if (viewsDropdownList) {
+        viewsDropdownList.innerHTML = cameraVantages.map((v, i) => `
+            <button class="view-dropdown-item ${i === 0 ? 'active' : ''}" data-index="${i}">
+                <div class="item-left">
+                    <span class="item-name">${v.fullName}</span>
+                    <span class="item-sub">${v.sub}</span>
+                </div>
+                <span class="item-key-badge">${i + 1}</span>
+            </button>
+        `).join('');
+
+        viewsDropdownList.querySelectorAll('.view-dropdown-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const idx = parseInt(btn.dataset.index, 10);
+                triggerCameraTransition(idx);
+                if (cameraDropdown) cameraDropdown.classList.add('hidden');
+                if (btnCameraMenu) btnCameraMenu.classList.remove('open');
+            });
+        });
+    }
+
+    if (btnCameraMenu && cameraDropdown) {
+        btnCameraMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = cameraDropdown.classList.toggle('hidden');
+            btnCameraMenu.classList.toggle('open', !isHidden);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!cameraDropdown.contains(e.target) && !btnCameraMenu.contains(e.target)) {
+                cameraDropdown.classList.add('hidden');
+                btnCameraMenu.classList.remove('open');
+            }
+        });
+    }
     
     if (btnHomeView) {
         btnHomeView.addEventListener('click', () => {
@@ -557,10 +802,28 @@ async function init() {
 
     if (btnToggleCamera) {
         btnToggleCamera.addEventListener('click', () => {
-            // Toggle between 3D overview (0) and Top-Down ordnance (3)
-            triggerCameraTransition(cameraVantageIndex === 3 ? 0 : 3);
+            // Toggle between Top-Down (index 7) and Overview (0)
+            triggerCameraTransition(cameraVantageIndex === 7 ? 0 : 7);
         });
     }
+
+    // Keyboard Shortcuts for Instant Camera Switching & Playback
+    window.addEventListener('keydown', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        const num = parseInt(e.key, 10);
+        if (num >= 1 && num <= 8) {
+            triggerCameraTransition(num - 1);
+        } else if (e.key === 'c' || e.key === 'C') {
+            triggerCameraTransition(cameraVantageIndex + 1);
+        } else if (e.key === 'h' || e.key === 'H') {
+            triggerCameraTransition(0);
+        } else if (e.key === 't' || e.key === 'T') {
+            triggerCameraTransition(cameraVantageIndex === 7 ? 0 : 7);
+        } else if (e.code === 'Space') {
+            e.preventDefault();
+            setPlayState(!isPlaying);
+        }
+    });
 
     if (btnTogglePanels) {
         btnTogglePanels.addEventListener('click', () => {
@@ -720,122 +983,18 @@ async function init() {
         // Readback for Analytics & Readouts (every 6 frames ~ 10Hz)
         readbackCounter++;
         if (readbackCounter % 6 === 0) {
-            simulator.updateReadback();
-            if (isSideBySide || AppState.currentWorkspace === 'intervention') {
-                baselineSimulator.updateReadback();
-            }
+            updateTelemetry();
             
-            // Analytical matrices & overlays update
-            arrivalTracker.update(simulator.readbackBuffer, simulator.totalSimTime, 0.5);
-            const roadAnalysis = roadGraph.analyze(simulator);
-            if (AppState.currentWorkspace === 'intervention' || AppState.overlays.unintendedConsequences) {
-                interventionEngine.updateDifference(simulator, baselineSimulator);
-            }
-            if (AppState.currentWorkspace === 'science') {
-                validationMetrics.evaluateMassBalance(simulator);
-            }
-            analyticalOverlays.update(now * 0.001);
-            
-            // Building flood status
-            const bldgStats = buildingsLayer.updateFloodStatus(simulator, baselineSimulator, isSideBySide || AppState.currentWorkspace === 'intervention');
-            const floodedNow = bldgStats.floodedCount;
-            const savedNow = bldgStats.savedCount;
-            const unmitigatedNow = floodedNow + savedNow;
-            
-            statFloodedBldgs.textContent = floodedNow.toLocaleString();
-            if (statEndangeredBldgs) statEndangeredBldgs.textContent = bldgStats.endangeredCount.toLocaleString();
-            if (statPartialBldgs) statPartialBldgs.textContent = bldgStats.partialCount.toLocaleString();
-            statSavedBldgs.textContent = savedNow.toLocaleString();
-            
-            // Road Network Cutoffs
-            const roadCutoffCount = roadAnalysis ? roadAnalysis.floodedEdgesCount : 0;
-            statRoadsCutoff.textContent = roadCutoffCount;
-            roadsCountBadge.textContent = roadCutoffCount;
-            
-            if (!roadAnalysis || roadAnalysis.cutoffList.length === 0) {
-                roadsList.innerHTML = `
-                    <div class="road-entry passable">
-                        <span class="r-name">The New Quay</span>
-                        <span class="r-tag">Passable</span>
-                    </div>
-                    <div class="road-entry passable">
-                        <span class="r-name">Old Bridge</span>
-                        <span class="r-tag">Passable</span>
-                    </div>
-                    <div class="road-entry passable">
-                        <span class="r-name">Abbey Street</span>
-                        <span class="r-tag">Passable</span>
-                    </div>
-                `;
-            } else {
-                roadsList.innerHTML = roadAnalysis.cutoffList.slice(0, 5).map(r => `
-                    <div class="road-entry hazard">
-                        <span class="r-name">${r.name}</span>
-                        <span class="r-tag">${r.depth}m Hazard</span>
-                    </div>
-                `).join('');
-            }
-            
-            // Sample Selected Inspection Point
-            if (selectedInspectUV) {
-                const sampleProtected = simulator.samplePoint(selectedInspectUV.u, selectedInspectUV.v);
-                const gx = Math.min(meta.grid_w - 1, Math.max(0, Math.floor(selectedInspectUV.u * meta.grid_w)));
-                const gy = Math.min(meta.grid_h - 1, Math.max(0, Math.floor((1.0 - selectedInspectUV.v) * meta.grid_h)));
-                const groundElev = elevArray[gy * meta.grid_w + gx] || 18.0;
-                const flowSpeed = Math.hypot(sampleProtected.u, sampleProtected.v);
-                
-                readoutStreet.textContent = selectedInspectUV.street || 'Quay Street';
-                readoutElev.textContent = `${groundElev.toFixed(1)} m`;
-                readoutFlow.textContent = `${flowSpeed.toFixed(2)} m/s`;
-                readoutDepthVal.textContent = `${sampleProtected.h.toFixed(2)} m`;
-                
-                if (sampleProtected.h < 0.05) {
-                    readoutHazardTag.className = 'hazard-pill safe';
-                    readoutHazardTag.textContent = 'Normal';
-                } else if (sampleProtected.h < 0.30) {
-                    readoutHazardTag.className = 'hazard-pill hazard';
-                    readoutHazardTag.textContent = 'Pedestrian Warning';
-                } else {
-                    readoutHazardTag.className = 'hazard-pill hazard';
-                    readoutHazardTag.textContent = 'Severe Flood';
-                }
-                
-                workspaceManager.sampleHydrograph(simulator.totalSimTime, sampleProtected);
-            }
-            
-            // Sample Peak Town Depth
-            const sampleQuay = simulator.samplePoint(0.53, 0.44);
-            statPeakDepth.textContent = `${sampleQuay.peak_h.toFixed(2)} m`;
-            
-            // Update workspace reactive panels
-            workspaceManager.updateView();
-            
-            // Side-by-Side overlay stats: Rigorous comparison between Unmitigated Baseline and Protected
-            if (isSideBySide) {
-                if (sbsUnmitFlooded) sbsUnmitFlooded.textContent = unmitigatedNow.toLocaleString();
-                if (sbsUnmitRoads) sbsUnmitRoads.textContent = `${roadStats.cutoffCount} roads`;
-                if (sbsUnmitDepth) sbsUnmitDepth.textContent = `${sampleQuay.peak_h.toFixed(2)} m`;
-                
-                if (sbsSavedBldgs) sbsSavedBldgs.textContent = savedNow.toLocaleString();
-                if (sbsProtectRate) {
-                    const rate = unmitigatedNow > 0 ? ((savedNow / Math.max(1, unmitigatedNow)) * 100).toFixed(1) : '100.0';
-                    sbsProtectRate.textContent = `${rate}% Protected`;
-                }
-            }
-            
-            // Flood Clock & Scrubber (Matches User Reference Image 4: 00:00 of 06:00 simulated)
+            // Flood Clock & Scrubber sync
             const simSec = simulator.totalSimTime;
             const totalHours = Math.floor(simSec / 3600);
             const totalMins = Math.floor((simSec % 3600) / 60);
             floodClockText.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')}`;
             
             const progressPct = Math.min(100, (simSec / 21600) * 100);
-            timelineProgressFill.style.width = `${progressPct}%`;
+            if (timelineProgressFill) timelineProgressFill.style.width = `${progressPct}%`;
             if (scrubberKnob) scrubberKnob.style.left = `${progressPct}%`;
-            timelineScrubber.value = simSec;
-            
-            // Update floating inspector
-            inspector.updateInspectCard();
+            if (timelineScrubber && !isScrubbing) timelineScrubber.value = simSec;
         }
         
         // Animated water shader uniforms

@@ -32,7 +32,6 @@
                 </a>
                 <div class="topbar-right">
                     <a class="nav-link" href="#how-it-works" id="how-link">How it works <span aria-hidden="true">↗</span></a>
-                    <div class="live-state"><span class="live-dot"></span><span>MODEL ONLINE</span></div>
                 </div>
             </header>
 
@@ -50,24 +49,6 @@
                     </div>
                 </div>
             </section>
-
-            <div class="map-label map-label-top"><span class="map-crosshair" aria-hidden="true">+</span><span>LOWLAND BASIN · SECTOR 04</span></div>
-            <div class="map-label map-label-side"><span>▲</span> UPSTREAM <span class="side-rule"></span></div>
-
-            <div class="simulation-readout" aria-label="Live simulation readings">
-                <div class="readout-top"><span>WATER LEVEL</span><span class="readout-live"><span class="live-dot"></span> LIVE</span></div>
-                <div class="level-value"><span id="water-level">+0.72</span><span class="unit">m</span></div>
-                <div class="readout-divider"></div>
-                <div class="extent-row"><span>EST. FLOOD EXTENT</span><strong id="flood-extent">18%</strong></div>
-                <div class="readout-meter"><span id="extent-meter"></span></div>
-            </div>
-
-            <div class="interaction-hint"><span class="hint-pointer" aria-hidden="true">⌖</span><span>Move to raise the waterline</span></div>
-            <footer class="hero-footer">
-                <span>WATER FINDS ITS WAY.</span>
-                <span class="footer-center"><span class="footer-dot"></span> TERRAIN MODEL <span class="footer-sep">/</span> INTERACTIVE</span>
-                <span class="coordinates" id="coordinates">52°21′ N &nbsp; 7°42′ W</span>
-            </footer>
 
             <dialog class="info-dialog" id="info-dialog" aria-labelledby="dialog-title">
                 <button class="dialog-close" id="close-dialog" type="button" aria-label="Close">×</button>
@@ -803,17 +784,40 @@
                     <button class="speed-btn active" data-speed="2500">Max</button>
                 </div>
 
+                <!-- Camera Vantage Views Dropdown -->
+                <div class="camera-views-cluster" id="camera-views-cluster">
+                    <button id="btn-camera-menu" class="camera-menu-btn" title="Choose Camera Viewpoint (Keys 1–8)">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                        <span id="current-vantage-label" class="vantage-active-text">Overview</span>
+                        <svg class="vantage-caret" viewBox="0 0 10 6" width="8" height="5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M1 1l4 4 4-4"/>
+                        </svg>
+                    </button>
+                    <div id="camera-views-dropdown" class="camera-views-dropdown hidden">
+                        <div class="views-dropdown-title">
+                            <span>CAMERA VANTAGE POINTS</span>
+                            <span class="views-hint">Keys 1–8</span>
+                        </div>
+                        <div class="views-dropdown-list" id="views-dropdown-list">
+                            <!-- Populated with 8 views -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 4 Action Buttons on Right -->
                 <div class="action-icons-group">
                     <!-- 1. Home / Reset View -->
-                    <button id="btn-home-view" class="bar-action-btn" title="Home Overview">
+                    <button id="btn-home-view" class="bar-action-btn" title="Home Overview (Key 1)">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                             <polyline points="9 22 9 12 15 12 15 22"/>
                         </svg>
                     </button>
-                    <!-- 2. Target / Vantage Points -->
-                    <button id="btn-cycle-camera" class="bar-action-btn" title="Cycle Key Vantage Points (Old Bridge, The Quay, Suir Island, Gashouse Bridge, Town Centre)">
+                    <!-- 2. Target / Cycle Vantage Points -->
+                    <button id="btn-cycle-camera" class="bar-action-btn" title="Cycle Next Vantage Point (Key C)">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/>
                             <circle cx="12" cy="12" r="3"/>
@@ -824,7 +828,7 @@
                         </svg>
                     </button>
                     <!-- 3. Camera / Perspective -->
-                    <button id="btn-toggle-camera" class="bar-action-btn" title="Toggle Top-Down / Oblique Perspective">
+                    <button id="btn-toggle-camera" class="bar-action-btn" title="Toggle Tactical Top-Down (2D) / Oblique (3D)">
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                             <line x1="3" y1="9" x2="21" y2="9"/>
@@ -842,6 +846,12 @@
                     </button>
                 </div>
             </footer>
+
+            <!-- Floating In-Scene Camera HUD Toast -->
+            <div id="camera-hud-toast" class="camera-hud-toast hidden">
+                <span class="hud-icon">📷</span>
+                <span id="camera-hud-text" class="hud-text">Overview</span>
+            </div>
 
             <!-- Floating Point Depth Inspection Marker Card -->
             <div id="inspector-card" class="inspector-card" style="display: none;">

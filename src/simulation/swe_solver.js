@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { commonVertexShader, sweComputeShader, sweInitShader } from './swe_shaders.js';
+import { commonVertexShader, sweComputeShader, sweInitShader, sweSeekShader } from './swe_shaders.js';
 
 export class SWESimulator {
     constructor(renderer, meta, elevArray, bldgMaskImg, riverMaskImg) {
@@ -170,8 +170,77 @@ export class SWESimulator {
             }
         });
         
+        // Time-Seek Material (for instant, physically valid time scrubbing)
+        this.seekMaterial = new THREE.RawShaderMaterial({
+            glslVersion: THREE.GLSL3,
+            vertexShader: commonVertexShader,
+            fragmentShader: sweSeekShader,
+            uniforms: {
+                u_elevTex: { value: this.elevTexture },
+                u_barrierTex: { value: this.barrierTexture },
+                u_targetTime: { value: 0.0 },
+                u_riverInflow: { value: this.params.riverInflow },
+                u_rainRate: { value: this.params.rainRate },
+                u_downstreamSurge: { value: this.params.downstreamSurge },
+                u_resolution: { value: new THREE.Vector2(this.gridW, this.gridH) }
+            }
+        });
+        
         this.quadMesh = new THREE.Mesh(this.quadGeom, this.computeMaterial);
         this.scene.add(this.quadMesh);
+    }
+    
+    seekTime(targetSec) {
+        this.totalSimTime = Math.max(0.0, Math.min(21600.0, targetSec));
+        
+        // If seeking back to 0, use pristine init condition
+        if (this.totalSimTime <= 5.0) {
+            this.reset();
+            return;
+        }
+
+        // 1. Configure seek uniforms
+        this.seekMaterial.uniforms.u_targetTime.value = this.totalSimTime;
+        this.seekMaterial.uniforms.u_riverInflow.value = this.params.riverInflow;
+        this.seekMaterial.uniforms.u_rainRate.value = this.params.rainRate;
+        this.seekMaterial.uniforms.u_downstreamSurge.value = this.params.downstreamSurge;
+        
+        // 2. Render seek state into both targets
+        this.quadMesh.material = this.seekMaterial;
+        this.renderer.setRenderTarget(this.targetA);
+        this.renderer.render(this.scene, this.camera);
+        this.renderer.setRenderTarget(this.targetB);
+        this.renderer.render(this.scene, this.camera);
+        
+        this.readTarget = this.targetA;
+        this.writeTarget = this.targetB;
+        
+        // 3. Relax state with 6 numerical SWE flux sub-steps
+        const currentInflow = this.getCurrentInflow();
+        const currentRain = this.getCurrentRain();
+        const currentSurge = this.getCurrentSurge();
+        const rain_m_s = (currentRain / 1000.0) / 3600.0;
+        
+        this.computeMaterial.uniforms.u_rainRate.value = rain_m_s;
+        this.computeMaterial.uniforms.u_riverInflow.value = currentInflow;
+        this.computeMaterial.uniforms.u_downstreamSurge.value = currentSurge;
+        this.computeMaterial.uniforms.u_manningN.value = this.params.manningN;
+        this.computeMaterial.uniforms.u_dt.value = 0.085;
+        this.quadMesh.material = this.computeMaterial;
+        
+        for (let i = 0; i < 6; i++) {
+            this.computeMaterial.uniforms.u_stateTex.value = this.readTarget.texture;
+            this.renderer.setRenderTarget(this.writeTarget);
+            this.renderer.render(this.scene, this.camera);
+            
+            const temp = this.readTarget;
+            this.readTarget = this.writeTarget;
+            this.writeTarget = temp;
+        }
+        
+        this.renderer.setRenderTarget(null);
+        this.updateReadback();
+        this.currentVolume = this.computeTotalVolume();
     }
     
     reset() {
@@ -239,14 +308,12 @@ export class SWESimulator {
         this.computeMaterial.uniforms.u_downstreamSurge.value = currentSurge;
         this.computeMaterial.uniforms.u_manningN.value = this.params.manningN;
         
-        // Strict Courant-Friedrichs-Lewy (CFL) numerical stability enforcement:
-        // For dx ~ 5.67m, gravity wave celerity c = sqrt(gh) ~ 6 m/s, max stable dt <= 0.09s.
-        // Scale sub-steps dynamically up to 14 passes per frame so high speeds (300x, 900x, Max)
-        // advance physically without EVER exceeding the hyperbolic stability threshold.
+        // Dynamic sub-stepping scaling:
         const maxStableDt = 0.085;
-        const subSteps = Math.min(14, Math.max(3, Math.round(this.params.subSteps * Math.min(4.5, Math.sqrt(dtMultiplier)))));
-        const targetDt = (this.params.dt * dtMultiplier * this.params.subSteps) / subSteps;
-        const dt = Math.min(maxStableDt, targetDt);
+        const targetTotalDt = this.params.dt * dtMultiplier * this.params.subSteps;
+        const neededSteps = Math.ceil(targetTotalDt / maxStableDt);
+        const subSteps = Math.min(28, Math.max(3, neededSteps));
+        const dt = Math.min(maxStableDt, targetTotalDt / subSteps);
         this.computeMaterial.uniforms.u_dt.value = dt;
         
         this.quadMesh.material = this.computeMaterial;

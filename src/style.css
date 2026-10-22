@@ -1166,19 +1166,19 @@ input[type="range"]::-webkit-slider-thumb:hover {
     left: 50%;
     transform: translateX(-50%);
     height: 54px;
-    background: rgba(13, 19, 32, 0.82);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(13, 19, 32, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 28px;
     display: flex;
     align-items: center;
-    padding: 0 18px;
-    gap: 14px;
+    padding: 0 16px;
+    gap: 12px;
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.1);
     z-index: 1000;
-    min-width: 740px;
-    max-width: 92vw;
+    width: clamp(320px, 92vw, 980px);
+    box-sizing: border-box;
 }
 
 /* 1. Pure White Play / Pause Circle with Dark Icon and Reset Button */
@@ -1402,6 +1402,295 @@ input[type="range"]::-webkit-slider-thumb:hover {
     border-color: rgba(56, 189, 248, 0.6);
     background: rgba(14, 165, 233, 0.25);
     box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+}
+
+/* ==================== CAMERA VIEWS DROPDOWN ==================== */
+.camera-views-cluster {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.camera-menu-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 17px;
+    background: rgba(26, 36, 54, 0.78);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #e2e8f0;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    transition: all 0.18s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.camera-menu-btn:hover {
+    background: rgba(36, 49, 72, 0.92);
+    color: #ffffff;
+    border-color: rgba(56, 189, 248, 0.5);
+    transform: scale(1.02);
+}
+
+.camera-menu-btn.active {
+    border-color: rgba(56, 189, 248, 0.7);
+    background: rgba(14, 165, 233, 0.22);
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.vantage-active-text {
+    max-width: 130px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: 'DM Sans', -apple-system, sans-serif;
+}
+
+.vantage-caret {
+    opacity: 0.6;
+    transition: transform 0.2s ease;
+}
+
+.camera-menu-btn.open .vantage-caret {
+    transform: rotate(180deg);
+}
+
+.camera-views-dropdown {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    width: 280px;
+    background: rgba(13, 19, 32, 0.94);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 16px;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    padding: 10px;
+    z-index: 1050;
+    transform-origin: bottom right;
+    animation: popoverFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popoverFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.94) translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.views-dropdown-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px 8px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+
+.views-hint {
+    font-size: 9px;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.views-dropdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-top: 6px;
+    max-height: 340px;
+    overflow-y: auto;
+}
+
+.view-dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: #cbd5e1;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.14s ease;
+}
+
+.view-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+.view-dropdown-item.active {
+    background: rgba(14, 165, 233, 0.18);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #38bdf8;
+}
+
+.item-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.item-name {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.item-sub {
+    font-size: 10px;
+    color: #64748b;
+}
+
+.view-dropdown-item.active .item-sub {
+    color: #7dd3fc;
+}
+
+.item-key-badge {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: #94a3b8;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+}
+
+.view-dropdown-item.active .item-key-badge {
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.4);
+}
+
+/* ==================== FLOATING CAMERA HUD TOAST ==================== */
+.camera-hud-toast {
+    position: fixed;
+    top: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 18px;
+    background: rgba(13, 19, 32, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    border-radius: 20px;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 14px rgba(56, 189, 248, 0.35);
+    z-index: 1020;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.camera-hud-toast.hidden {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+    pointer-events: none;
+}
+
+/* ==================== RESPONSIVE BOTTOM BAR MEDIA QUERIES ==================== */
+@media (max-width: 1080px) {
+    #bottom-playback-bar.floating-pill-bar {
+        padding: 0 12px;
+        gap: 8px;
+        height: 52px;
+        width: min(96vw, 940px);
+    }
+    .time-sublabel {
+        display: none;
+    }
+    .vantage-active-text {
+        max-width: 75px;
+    }
+    .speed-btn {
+        padding: 3px 6px;
+        font-size: 10px;
+    }
+    .btn-bar-reset {
+        padding: 5px 10px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 860px) {
+    #bottom-playback-bar.floating-pill-bar {
+        padding: 0 10px;
+        gap: 6px;
+        height: 50px;
+        width: min(96vw, 760px);
+    }
+    .btn-bar-reset {
+        display: none;
+    }
+    .speed-capsule-group {
+        display: none;
+    }
+    .vantage-active-text {
+        display: none;
+    }
+    .camera-menu-btn {
+        padding: 0 8px;
+    }
+    .scrubber-container {
+        min-width: 90px;
+    }
+    .time-readout-box {
+        min-width: 50px;
+    }
+    .time-clock {
+        font-size: 16px;
+    }
+    .bar-action-btn {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+@media (max-width: 600px) {
+    #bottom-playback-bar.floating-pill-bar {
+        bottom: 10px;
+        height: 46px;
+        padding: 0 8px;
+        gap: 5px;
+        width: 98vw;
+    }
+    #btn-home-view, #btn-toggle-camera {
+        display: none;
+    }
+    .scrubber-container {
+        min-width: 60px;
+    }
+    .time-clock {
+        font-size: 14px;
+    }
 }
 
 /* ==================== INSPECTOR CARD ==================== */
