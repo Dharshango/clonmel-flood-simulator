@@ -137,8 +137,8 @@ export function createWaterMesh(meta, terrainGeometry, simulator) {
         vec4 water = sampleSmooth(u_waterTex, vUv);
         float h = water.r;
         
-        // Soft boundary discard
-        if (h < 0.010) {
+        // Soft boundary discard: strictly ignore sub-centimeter numerical moisture on dry land
+        if (h < 0.025) {
             discard;
         }
         
@@ -156,9 +156,8 @@ export function createWaterMesh(meta, terrainGeometry, simulator) {
         vec3 rainSpreadBlue    = vec3(0.14, 0.52, 0.94); // pure silky blue for rain spread
         
         // When water overflows onto dry ground / streets (isRiver < 0.35):
-        // If flood is severe (spilling over quays, h > 0.20), tint to orangish-yellow flood warning
-        // If rain spread (h <= 0.20), keep pure silky blue
-        vec3 overlandColor = mix(rainSpreadBlue, floodOrangeYellow, smoothstep(0.12, 0.38, h));
+        // Only actual significant flood spills (h > 0.18m) turn to orangish-yellow warning
+        vec3 overlandColor = mix(rainSpreadBlue, floodOrangeYellow, smoothstep(0.18, 0.42, h));
         
         // Inside the River Suir: 100% pure royal blue!
         // Outside the river in flooded streets: overland flood color!

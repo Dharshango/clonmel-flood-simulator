@@ -238,8 +238,9 @@ void main() {
     // --- Bed Slope Source Term (Well-Balanced Hydrostatic Reconstruction) ---
     float dz_dx = (zbEffE - zbEffW) / (2.0 * u_dxdy.x);
     float dz_dy = (zbEffN - zbEffS) / (2.0 * u_dxdy.y);
-    float source_qx = -u_gravity * hC * dz_dx;
-    float source_qy = -u_gravity * hC * dz_dy;
+    // Suppress slope momentum on dry terrain (hC <= 0.02m) to prevent artificial hillside runoff
+    float source_qx = (hC > 0.02) ? (-u_gravity * hC * dz_dx) : 0.0;
+    float source_qy = (hC > 0.02) ? (-u_gravity * hC * dz_dy) : 0.0;
     
     // --- Finite Volume Evolution ---
     float dt_dx = u_dt / u_dxdy.x;
@@ -314,6 +315,13 @@ void main() {
         qxNext *= factor;
         qyNext *= factor;
     } else {
+        hNext = 0.0;
+        qxNext = 0.0;
+        qyNext = 0.0;
+    }
+    
+    // Strict dry bed cleanup to guarantee dry terrain remains 100% dry
+    if (hNext < 0.015) {
         hNext = 0.0;
         qxNext = 0.0;
         qyNext = 0.0;

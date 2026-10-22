@@ -1471,3 +1471,489 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .hazard-tag.hazard { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
 
 .hidden { display: none !important; }
+
+
+/* ==================== HYDROVERSE 5 WORKSPACES STYLING ==================== */
+
+/* --- Analytical Overlays & Legend --- */
+.overlay-toggles-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.overlay-toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    background: rgba(26, 36, 54, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.overlay-toggle-btn:hover {
+    background: rgba(36, 49, 72, 0.85);
+    color: #ffffff;
+    border-color: rgba(56, 189, 248, 0.3);
+}
+
+.overlay-toggle-btn.active {
+    background: rgba(14, 165, 233, 0.22);
+    border-color: rgba(56, 189, 248, 0.7);
+    color: #38bdf8;
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+.overlay-toggle-btn .ov-icon {
+    font-size: 13px;
+}
+
+.floating-legend {
+    position: absolute;
+    bottom: 84px;
+    left: 20px;
+    background: rgba(13, 19, 32, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    padding: 10px 14px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    z-index: 45;
+    min-width: 260px;
+    pointer-events: auto;
+}
+
+.legend-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.legend-unit {
+    color: #38bdf8;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.legend-bar {
+    height: 10px;
+    border-radius: 4px;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.legend-bar.depth-gradient {
+    background: linear-gradient(to right, #f59e0b 0%, #ea580c 50%, #dc2626 100%);
+}
+
+.legend-bar.arrival-gradient {
+    background: linear-gradient(to right, #fbbf24 0%, #06b6d4 50%, #3b82f6 100%);
+}
+
+.legend-bar.duration-gradient {
+    background: linear-gradient(to right, #c084fc 0%, #8b5cf6 50%, #4c1d95 100%);
+}
+
+.legend-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9.5px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #94a3b8;
+}
+
+.legend-split-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.pill-green { color: #34d399; }
+.pill-magenta { color: #f43f5e; }
+
+/* --- OPW Station 16011 Telemetry Card --- */
+.station-card {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.station-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.station-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+.station-status-dot {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9.5px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #34d399;
+}
+
+.station-status-dot::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 6px #10b981;
+}
+
+.station-readouts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    font-size: 10.5px;
+}
+
+.station-readout-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.st-lbl { color: #64748b; font-size: 9.5px; }
+.st-val { color: #38bdf8; font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+/* --- Flood Time Machine --- */
+.time-milestones-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.milestone-btn {
+    flex: 1;
+    padding: 5px 4px;
+    background: rgba(26, 36, 54, 0.60);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #94a3b8;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.milestone-btn:hover, .milestone-btn.active {
+    background: rgba(14, 165, 233, 0.22);
+    border-color: rgba(56, 189, 248, 0.5);
+    color: #ffffff;
+}
+
+.hydrograph-wrap {
+    margin-top: 6px;
+    background: rgba(10, 15, 26, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 8px;
+}
+
+.hydrograph-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #cbd5e1;
+    margin-bottom: 4px;
+}
+
+.hydrograph-canvas {
+    width: 100%;
+    height: 80px;
+    display: block;
+}
+
+.historical-events-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.historical-event-card {
+    display: flex;
+    flex-direction: column;
+    padding: 8px 10px;
+    background: rgba(26, 36, 54, 0.60);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.historical-event-card:hover {
+    background: rgba(36, 49, 72, 0.85);
+    border-color: rgba(56, 189, 248, 0.4);
+}
+
+.historical-event-card.active {
+    background: rgba(14, 165, 233, 0.20);
+    border-color: rgba(56, 189, 248, 0.7);
+}
+
+.he-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.he-title { font-size: 11px; font-weight: 700; color: #f8fafc; }
+.he-flow { font-size: 10px; font-family: 'JetBrains Mono', monospace; color: #38bdf8; }
+.he-desc { font-size: 10px; color: #94a3b8; margin-top: 2px; line-height: 1.35; }
+
+/* --- Story Mode Walkthrough Card --- */
+.story-mode-box {
+    position: absolute;
+    top: 76px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13, 19, 32, 0.90);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    border-radius: 14px;
+    padding: 12px 18px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    z-index: 120;
+    max-width: 520px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.story-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.story-badge {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: #38bdf8;
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.story-title {
+    font-size: 13.5px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.story-desc {
+    font-size: 12px;
+    color: #cbd5e1;
+    line-height: 1.45;
+}
+
+.story-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 4px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.story-counter {
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    color: #94a3b8;
+}
+
+.story-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.story-btn {
+    padding: 4px 10px;
+    background: rgba(56, 189, 248, 0.18);
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.story-btn:hover {
+    background: rgba(56, 189, 248, 0.35);
+}
+
+/* --- Intervention Scorecard --- */
+.intervention-scorecard {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.sc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+}
+
+.sc-lbl { color: #94a3b8; }
+.sc-val { font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #f1f5f9; }
+.sc-val.accent { color: #38bdf8; }
+.sc-val.green { color: #34d399; }
+
+/* --- Impact Intelligence & Hospital Accessibility --- */
+.hospital-access-card {
+    background: rgba(15, 23, 42, 0.70);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.hosp-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hosp-title {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.hosp-condition-text {
+    font-size: 10.5px;
+    color: #cbd5e1;
+    line-height: 1.35;
+}
+
+.isolated-sectors-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.sector-item {
+    background: rgba(26, 36, 54, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    padding: 6px 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.sec-name { font-size: 10px; color: #94a3b8; }
+.sec-status { font-size: 10.5px; font-weight: 700; color: #f8fafc; }
+
+/* --- Science & Validation Cards --- */
+.science-card {
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.sci-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+
+.sci-spec-text {
+    font-size: 10.5px;
+    color: #cbd5e1;
+    line-height: 1.4;
+    font-family: 'JetBrains Mono', monospace;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+.contingency-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    text-align: center;
+    margin-top: 4px;
+}
+
+.contingency-cell {
+    background: rgba(26, 36, 54, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 4px;
+}
+
+.ct-lbl { font-size: 9px; color: #64748b; }
+.ct-val { font-size: 11.5px; font-weight: 800; color: #34d399; font-family: 'JetBrains Mono', monospace; }
+
+.status-pill-green {
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.status-pill-red {
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}

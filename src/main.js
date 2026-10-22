@@ -8,6 +8,13 @@ import { createBarriersManager } from './rendering/barriers.js';
 import { createInspector } from './ui/inspector.js';
 import { exportPeakDepthMap } from './ui/export_map.js';
 import { initHydroverseHero } from './ui/hydroverse_hero.js';
+import { AppState } from './ui/state.js';
+import { ArrivalDurationTracker } from './analysis/arrival_duration.js';
+import { RoadGraphAnalyzer } from './analysis/road_graph.js';
+import { InterventionEngine } from './analysis/intervention_engine.js';
+import { ValidationMetrics } from './analysis/validation_metrics.js';
+import { createAnalyticalOverlays } from './rendering/analytical_overlays.js';
+import { WorkspaceManager } from './ui/workspaces.js';
 
 async function init() {
     console.log('Initializing Hydroverse (Clonmel, River Suir)...');
@@ -123,11 +130,19 @@ async function init() {
     // Inspector
     const inspector = createInspector(camera, terrainMesh, simulator, meta, elevArray, roadsResp);
     scene.add(inspector.pinGroup);
+
+    // 3.5 Analytical Modules & Overlays
+    const arrivalTracker = new ArrivalDurationTracker(meta.grid_w, meta.grid_h, meta.bbox);
+    const roadGraph = new RoadGraphAnalyzer(roadsResp, meta, elevArray);
+    const interventionEngine = new InterventionEngine(meta.grid_w, meta.grid_h, meta);
+    const validationMetrics = new ValidationMetrics(meta);
+    const analyticalOverlays = createAnalyticalOverlays(meta, terrainGeom, simulator, baselineSimulator, arrivalTracker, interventionEngine);
+    scene.add(analyticalOverlays.mesh);
     
     // 4. State Management
     let isPlaying = true;
     let playbackSpeed = 300; // default 300x for fast fluid feedback
-    let activeMode = 'live'; // 'live', 'barrier', 'compare'
+    let activeMode = 'live';
     let isSideBySide = false;
     let currentScenario = 'flood100';
     let tweenCamera = null;
@@ -151,13 +166,61 @@ async function init() {
         });
     }
     
-    // Top Tabs & Panels
+    // Top Tabs & Panels (5 Workspaces)
     const tabLive = document.getElementById('tab-live');
-    const tabBarrier = document.getElementById('tab-barrier');
-    const tabCompare = document.getElementById('tab-compare');
+    const tabTime = document.getElementById('tab-time');
+    const tabIntervention = document.getElementById('tab-intervention') || document.getElementById('tab-barrier');
+    const tabImpact = document.getElementById('tab-impact');
+    const tabScience = document.getElementById('tab-science');
+    
     const scenarioControlsView = document.getElementById('scenario-controls-view');
+    const timeMachineView = document.getElementById('time-machine-view');
     const barrierStudioView = document.getElementById('barrier-studio-view');
+    const impactIntelView = document.getElementById('impact-intel-view');
+    const scienceValidationView = document.getElementById('science-validation-view');
     const sideBySideOverlay = document.getElementById('side-by-side-overlay');
+    
+    // Workspace Elements Bundle for WorkspaceManager
+    const workspaceElements = {
+        tabs: {
+            live: tabLive,
+            time: tabTime,
+            intervention: tabIntervention,
+            impact: tabImpact,
+            science: tabScience
+        },
+        leftPanels: {
+            live: scenarioControlsView,
+            time: timeMachineView,
+            intervention: barrierStudioView,
+            impact: impactIntelView,
+            science: scienceValidationView
+        },
+        overlayToggles: document.querySelectorAll('.overlay-toggle-btn'),
+        historicalBtns: document.querySelectorAll('.historical-event-card'),
+        interventionControls: {
+            btnSuds: document.getElementById('btn-toggle-suds'),
+            btnPumps: document.getElementById('btn-toggle-pumps'),
+            btnDiffToggle: document.getElementById('btn-toggle-diff')
+        },
+        storyControls: {
+            btnStart: document.getElementById('btn-launch-story'),
+            btnPrev: document.getElementById('btn-story-prev'),
+            btnNext: document.getElementById('btn-story-next'),
+            btnClose: document.getElementById('btn-story-close')
+        }
+    };
+    
+    const workspaceManager = new WorkspaceManager(
+        workspaceElements,
+        simulator,
+        baselineSimulator,
+        roadGraph,
+        interventionEngine,
+        validationMetrics,
+        analyticalOverlays,
+        barriersManager
+    );
     
     // Side-by-Side Comparison Readouts (Unprotected Baseline vs Protected)
     const sbsUnmitFlooded = document.getElementById('sbs-unmit-flooded');
@@ -227,33 +290,13 @@ async function init() {
     // Selected Inspection Point (defaults to Quay Street)
     let selectedInspectUV = { u: 0.53, v: 0.44, street: 'The Quay / Quay Street' };
     
-    // Mode Navigation: Live, Barrier, Compare
+    // Mode / Workspace Switching
     function setMode(mode) {
         activeMode = mode;
         pendingBarrierPoint = null;
-        tabLive.classList.toggle('active', mode === 'live');
-        tabBarrier.classList.toggle('active', mode === 'barrier');
-        tabCompare.classList.toggle('active', mode === 'compare');
+        workspaceManager.setWorkspace(mode);
         
-        if (mode === 'live') {
-            isSideBySide = false;
-            scenarioControlsView.classList.remove('hidden');
-            barrierStudioView.classList.add('hidden');
-            sideBySideOverlay.classList.add('hidden');
-        } else if (mode === 'barrier') {
-            isSideBySide = false;
-            scenarioControlsView.classList.add('hidden');
-            barrierStudioView.classList.remove('hidden');
-            sideBySideOverlay.classList.add('hidden');
-            if (barriersManager.barriers.length === 0) {
-                barriersManager.loadPresets(presetsResp);
-            }
-            updateBarrierUI();
-        } else if (mode === 'compare') {
-            isSideBySide = true;
-            scenarioControlsView.classList.remove('hidden');
-            barrierStudioView.classList.add('hidden');
-            sideBySideOverlay.classList.remove('hidden');
+        if (mode === 'intervention') {
             if (barriersManager.barriers.length === 0) {
                 barriersManager.loadPresets(presetsResp);
             }
@@ -261,9 +304,29 @@ async function init() {
         }
     }
     
-    tabLive.addEventListener('click', () => setMode('live'));
-    tabBarrier.addEventListener('click', () => setMode('barrier'));
-    tabCompare.addEventListener('click', () => setMode('compare'));
+    if (tabLive) tabLive.addEventListener('click', () => setMode('live'));
+    if (tabTime) tabTime.addEventListener('click', () => setMode('time'));
+    if (tabIntervention) tabIntervention.addEventListener('click', () => setMode('intervention'));
+    if (tabImpact) tabImpact.addEventListener('click', () => setMode('impact'));
+    if (tabScience) tabScience.addEventListener('click', () => setMode('science'));
+    
+    // Milestone Scrubber Buttons
+    document.querySelectorAll('.milestone-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const val = parseFloat(btn.dataset.time);
+            simulator.totalSimTime = val;
+            baselineSimulator.totalSimTime = val;
+            timelineScrubber.value = val;
+            const pct = Math.min(100, (val / 21600) * 100);
+            if (timelineProgressFill) timelineProgressFill.style.width = `${pct}%`;
+            if (scrubberKnob) scrubberKnob.style.left = `${pct}%`;
+            const totalHours = Math.floor(val / 3600);
+            const totalMins = Math.floor((val % 3600) / 60);
+            if (floodClockText) floodClockText.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')}`;
+            document.querySelectorAll('.milestone-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        });
+    });
     
     function updateBarrierUI() {
         const count = barriersManager.barriers.length;
@@ -403,6 +466,9 @@ async function init() {
     function resetSimulation() {
         simulator.reset();
         baselineSimulator.reset();
+        arrivalTracker.reset();
+        validationMetrics.reset();
+        workspaceManager.hydrographData = [];
         inspector.hide();
         pendingBarrierPoint = null;
         updateBarrierUI();
@@ -548,8 +614,8 @@ async function init() {
     canvas.addEventListener('mousedown', (e) => {
         if (e.button !== 0) return;
         
-        // If in Barrier mode and drawing tool is active (wall or sandbags)
-        if (activeMode === 'barrier' && (activeBarrierTool === 'wall' || activeBarrierTool === 'sandbags')) {
+        // If in Intervention mode and drawing tool is active (wall or sandbags)
+        if ((activeMode === 'barrier' || activeMode === 'intervention') && (activeBarrierTool === 'wall' || activeBarrierTool === 'sandbags')) {
             const rect = canvas.getBoundingClientRect();
             const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
             const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -584,12 +650,14 @@ async function init() {
         if (hit) {
             selectedInspectUV = { u: hit.u, v: hit.v, street: hit.street, lon: hit.lon, lat: hit.lat };
             readoutCoords.textContent = `${hit.lat.toFixed(4)}°N, ${Math.abs(hit.lon).toFixed(4)}°W`;
+            const hydroName = document.getElementById('hydrograph-pt-name');
+            if (hydroName) hydroName.textContent = hit.street || 'Selected Point';
         }
     });
 
     // Right click cancels ongoing drawing polyline
     canvas.addEventListener('contextmenu', (e) => {
-        if (activeMode === 'barrier') {
+        if (activeMode === 'barrier' || activeMode === 'intervention') {
             e.preventDefault();
             pendingBarrierPoint = null;
         }
@@ -644,7 +712,7 @@ async function init() {
             const speedMultiplier = playbackSpeed / 20.0;
             simulator.step(speedMultiplier);
             
-            if (isSideBySide) {
+            if (isSideBySide || AppState.currentWorkspace === 'intervention') {
                 baselineSimulator.step(speedMultiplier);
             }
         }
@@ -653,12 +721,23 @@ async function init() {
         readbackCounter++;
         if (readbackCounter % 6 === 0) {
             simulator.updateReadback();
-            if (isSideBySide) {
+            if (isSideBySide || AppState.currentWorkspace === 'intervention') {
                 baselineSimulator.updateReadback();
             }
             
+            // Analytical matrices & overlays update
+            arrivalTracker.update(simulator.readbackBuffer, simulator.totalSimTime, 0.5);
+            const roadAnalysis = roadGraph.analyze(simulator);
+            if (AppState.currentWorkspace === 'intervention' || AppState.overlays.unintendedConsequences) {
+                interventionEngine.updateDifference(simulator, baselineSimulator);
+            }
+            if (AppState.currentWorkspace === 'science') {
+                validationMetrics.evaluateMassBalance(simulator);
+            }
+            analyticalOverlays.update(now * 0.001);
+            
             // Building flood status
-            const bldgStats = buildingsLayer.updateFloodStatus(simulator, baselineSimulator, isSideBySide);
+            const bldgStats = buildingsLayer.updateFloodStatus(simulator, baselineSimulator, isSideBySide || AppState.currentWorkspace === 'intervention');
             const floodedNow = bldgStats.floodedCount;
             const savedNow = bldgStats.savedCount;
             const unmitigatedNow = floodedNow + savedNow;
@@ -669,11 +748,11 @@ async function init() {
             statSavedBldgs.textContent = savedNow.toLocaleString();
             
             // Road Network Cutoffs
-            const roadStats = roadsLayer.updateRoadCutoffs(simulator);
-            statRoadsCutoff.textContent = roadStats.cutoffCount;
-            roadsCountBadge.textContent = roadStats.cutoffCount;
+            const roadCutoffCount = roadAnalysis ? roadAnalysis.floodedEdgesCount : 0;
+            statRoadsCutoff.textContent = roadCutoffCount;
+            roadsCountBadge.textContent = roadCutoffCount;
             
-            if (roadStats.cutoffCount === 0) {
+            if (!roadAnalysis || roadAnalysis.cutoffList.length === 0) {
                 roadsList.innerHTML = `
                     <div class="road-entry passable">
                         <span class="r-name">The New Quay</span>
@@ -689,9 +768,9 @@ async function init() {
                     </div>
                 `;
             } else {
-                roadsList.innerHTML = roadStats.cutoffList.slice(0, 5).map(r => `
+                roadsList.innerHTML = roadAnalysis.cutoffList.slice(0, 5).map(r => `
                     <div class="road-entry hazard">
-                        <span class="r-name">${r.name}${r.bridge ? ' (Bridge)' : ''}</span>
+                        <span class="r-name">${r.name}</span>
                         <span class="r-tag">${r.depth}m Hazard</span>
                     </div>
                 `).join('');
@@ -720,11 +799,16 @@ async function init() {
                     readoutHazardTag.className = 'hazard-pill hazard';
                     readoutHazardTag.textContent = 'Severe Flood';
                 }
+                
+                workspaceManager.sampleHydrograph(simulator.totalSimTime, sampleProtected);
             }
             
             // Sample Peak Town Depth
             const sampleQuay = simulator.samplePoint(0.53, 0.44);
             statPeakDepth.textContent = `${sampleQuay.peak_h.toFixed(2)} m`;
+            
+            // Update workspace reactive panels
+            workspaceManager.updateView();
             
             // Side-by-Side overlay stats: Rigorous comparison between Unmitigated Baseline and Protected
             if (isSideBySide) {

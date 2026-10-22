@@ -239,9 +239,14 @@ export class SWESimulator {
         this.computeMaterial.uniforms.u_downstreamSurge.value = currentSurge;
         this.computeMaterial.uniforms.u_manningN.value = this.params.manningN;
         
-        // Advance sub-steps smoothly based on playback speed multiplier
-        const subSteps = Math.min(12, Math.max(3, Math.round(this.params.subSteps * Math.sqrt(dtMultiplier))));
-        const dt = (this.params.dt * dtMultiplier * this.params.subSteps) / subSteps;
+        // Strict Courant-Friedrichs-Lewy (CFL) numerical stability enforcement:
+        // For dx ~ 5.67m, gravity wave celerity c = sqrt(gh) ~ 6 m/s, max stable dt <= 0.09s.
+        // Scale sub-steps dynamically up to 14 passes per frame so high speeds (300x, 900x, Max)
+        // advance physically without EVER exceeding the hyperbolic stability threshold.
+        const maxStableDt = 0.085;
+        const subSteps = Math.min(14, Math.max(3, Math.round(this.params.subSteps * Math.min(4.5, Math.sqrt(dtMultiplier)))));
+        const targetDt = (this.params.dt * dtMultiplier * this.params.subSteps) / subSteps;
+        const dt = Math.min(maxStableDt, targetDt);
         this.computeMaterial.uniforms.u_dt.value = dt;
         
         this.quadMesh.material = this.computeMaterial;
