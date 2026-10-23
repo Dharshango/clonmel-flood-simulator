@@ -4467,3 +4467,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .exp-limit-content strong {
     color: #fbbf24;
 }
+
+
+/* ==================== FREEHAND DRAWING CURSORS ==================== */
+.drawing-freehand-active {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28' fill='none'%3E%3Cpath d='M4 24l4-1 14-14-3-3L5 20l-1 4z' fill='%2338bdf8' stroke='%230f172a' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M19 6l3 3' stroke='%230f172a' stroke-width='1.5'/%3E%3Ccircle cx='4' cy='24' r='2' fill='%23ef4444'/%3E%3C/svg%3E") 4 24, crosshair !important;
+}
+
+.drawing-sandbag-active {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28' fill='none'%3E%3Cpath d='M4 24l4-1 14-14-3-3L5 20l-1 4z' fill='%23f59e0b' stroke='%230f172a' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M19 6l3 3' stroke='%230f172a' stroke-width='1.5'/%3E%3Ccircle cx='4' cy='24' r='2' fill='%23ef4444'/%3E%3C/svg%3E") 4 24, crosshair !important;
+}

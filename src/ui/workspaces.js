@@ -924,8 +924,8 @@ export class WorkspaceManager {
         const scResilience = document.getElementById('sc-resilience-index');
         const scDeployTime = document.getElementById('sc-deploy-time');
         
-        if (scWallLen) scWallLen.textContent = `${scorecard.defenses.wallLengthM.toLocaleString()} m`;
-        if (scSavedBldgs) scSavedBldgs.textContent = scorecard.outcomes.savedBuildings.toLocaleString();
+        if (scWallLen) scWallLen.textContent = `${(scorecard.defenses?.wallLengthM ?? 0).toLocaleString()} m`;
+        if (scSavedBldgs) scSavedBldgs.textContent = (scorecard.outcomes?.savedBuildings ?? 0).toLocaleString();
         if (scProtRate) scProtRate.textContent = `${scorecard.outcomes.protectionRatePct}%`;
         if (scResilience) scResilience.textContent = `${scorecard.outcomes.resilienceIndex} / 100`;
         if (scDeployTime) scDeployTime.textContent = `${scorecard.outcomes.deploymentTimeHrs} hrs`;

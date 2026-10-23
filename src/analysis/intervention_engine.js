@@ -133,8 +133,8 @@ export class InterventionEngine {
         const sandbagCount = barriersManager ? barriersManager.barriers.filter(b => b.type === 'sandbags').length : 0;
         const totalWallLength = barriersManager ? barriersManager.getTotalLength() : 0;
         
-        const savedBldgs = bldgStats ? bldgStats.savedCount : 0;
-        const floodedBldgs = bldgStats ? bldgStats.floodedCount : 0;
+        const savedBldgs = bldgStats ? (bldgStats.savedBuildings ?? bldgStats.savedCount ?? 0) : 0;
+        const floodedBldgs = bldgStats ? (bldgStats.floodedBuildings ?? bldgStats.floodedCount ?? 0) : 0;
         const totalThreatened = savedBldgs + floodedBldgs;
         const protectionEfficiency = totalThreatened > 0 ? (savedBldgs / totalThreatened) * 100 : 100;
         
