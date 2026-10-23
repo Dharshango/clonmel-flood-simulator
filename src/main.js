@@ -48,6 +48,15 @@ import {
     computeInterventionComparison,
     runSynchronizedReplay
 } from './analysis/dibrugarh_interventions.js';
+import {
+    bindDibrugarhWorkspaces,
+    updateDibrugarhWorkspace,
+    DIBRUGARH_INFRASTRUCTURE,
+    DIBRUGARH_COMMUNITY_EVIDENCE,
+    DIBRUGARH_COMMAND_EXERCISES,
+    getDibrugarhDefenceStatus,
+    getDibrugarhForecastExplanation
+} from './ui/dibrugarh_workspaces.js';
 
 let activeSetSideBySideReplayFn = null;
 
@@ -62,7 +71,14 @@ export {
     deployDykeReinforcement,
     deployStormwaterPumps,
     computeInterventionComparison,
-    runSynchronizedReplay
+    runSynchronizedReplay,
+    bindDibrugarhWorkspaces,
+    updateDibrugarhWorkspace,
+    DIBRUGARH_INFRASTRUCTURE,
+    DIBRUGARH_COMMUNITY_EVIDENCE,
+    DIBRUGARH_COMMAND_EXERCISES,
+    getDibrugarhDefenceStatus,
+    getDibrugarhForecastExplanation
 };
 
 /**
@@ -466,6 +482,9 @@ async function init() {
             if (workspaceManager.defenceManager && typeof workspaceManager.defenceManager.loadDefenceDataset === 'function') {
                 workspaceManager.defenceManager.loadDefenceDataset(`${townConfig.dataPath}flood_defences.json`);
             }
+
+            // Bind all 10 decision-support workspaces for active town (Dibrugarh vs Clonmel)
+            bindDibrugarhWorkspaces(workspaceManager, townConfig);
 
             workspaceManager.updateView();
         }
@@ -1121,6 +1140,9 @@ async function init() {
 
     window.explainabilityManager = workspaceManager.explainabilityManager;
 
+    // Bind initial town workspaces (Dibrugarh or Clonmel)
+    bindDibrugarhWorkspaces(workspaceManager, currentTownConfig);
+
     
 
     // Ingest live/cached telemetry and compute real-time forecast cycle
@@ -1409,6 +1431,10 @@ async function init() {
         pendingBarrierPoint = null;
 
         workspaceManager.setWorkspace(mode);
+
+        if (currentTownConfig && currentTownConfig.id === 'dibrugarh') {
+            updateDibrugarhWorkspace(mode, workspaceManager);
+        }
 
         
 
