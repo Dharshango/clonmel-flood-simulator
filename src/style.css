@@ -227,19 +227,31 @@ body {
 /* Directly floating over 3D model generation without blocking background */
 #top-nav.floating-header {
     position: absolute;
-    top: 16px;
-    left: 20px;
-    right: 20px;
+    top: 12px;
+    left: 16px;
+    right: 16px;
     height: auto;
     padding: 0;
     background: transparent;
     border: none;
     backdrop-filter: none;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
+    gap: 12px;
     z-index: 100;
     pointer-events: none; /* allows clicking 3D model through blank space */
+}
+
+.header-center-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+    min-width: 0;
+    max-width: calc(100vw - 280px);
+    pointer-events: none;
 }
 
 .brand-group {
@@ -315,20 +327,28 @@ body {
 
 /* Center Tabs: STRICTLY CENTERED IN THE WEBSITE */
 .header-modes.center-modes {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
     display: flex;
     align-items: center;
-    gap: 5px;
-    background: rgba(13, 19, 32, 0.82);
+    gap: 4px;
+    background: rgba(13, 19, 32, 0.85);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    padding: 4px 6px;
-    border-radius: 20px;
+    padding: 3px 6px;
+    border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
     pointer-events: auto;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.header-modes.center-modes::-webkit-scrollbar {
+    display: none;
 }
 
 .mode-tab {
@@ -361,14 +381,15 @@ body {
 
 /* ==================== TOWN SWITCHER UI (CLONMEL / DIBRUGARH) ==================== */
 .town-switcher-wrap {
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    top: 46px;
+    position: relative;
+    left: auto;
+    top: auto;
+    transform: none;
     display: flex;
     align-items: center;
     justify-content: center;
     pointer-events: auto;
+    margin: 0;
     z-index: 101;
 }
 
@@ -571,7 +592,7 @@ body {
 /* ==================== SIDE-BY-SIDE SPLIT OVERLAY ==================== */
 #side-by-side-overlay {
     position: absolute;
-    top: 72px;
+    top: 92px;
     left: 320px;
     right: 340px;
     display: flex;
@@ -676,7 +697,7 @@ body {
 /* ==================== CLEAN FLOATING PANELS ==================== */
 .clean-panel {
     position: absolute;
-    top: 70px;
+    top: 88px;
     bottom: 88px; /* room for floating bottom pill bar */
     width: 296px;
     background: rgba(13, 19, 32, 0.78);
@@ -1210,7 +1231,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* ==================== ON-CANVAS DRAWING HUD BANNER ==================== */
 .drawing-hud-banner {
     position: absolute;
-    top: 76px;
+    top: 96px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 95;
@@ -4555,4 +4576,36 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 .drawing-sandbag-active {
     cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28' fill='none'%3E%3Cpath d='M4 24l4-1 14-14-3-3L5 20l-1 4z' fill='%23f59e0b' stroke='%230f172a' stroke-width='1.5' stroke-linejoin='round'/%3E%3Cpath d='M19 6l3 3' stroke='%230f172a' stroke-width='1.5'/%3E%3Ccircle cx='4' cy='24' r='2' fill='%23ef4444'/%3E%3C/svg%3E") 4 24, crosshair !important;
+}
+
+/* Responsive Compact Navigation to prevent overlapping on screens <= 1500px */
+@media (max-width: 1500px) {
+    .mode-tab {
+        padding: 3.5px 7px !important;
+        font-size: 10.5px !important;
+        letter-spacing: -0.2px !important;
+        border-radius: 10px !important;
+    }
+    .header-modes.center-modes {
+        gap: 2.5px !important;
+        padding: 2.5px 4px !important;
+    }
+    .town-pill-btn {
+        padding: 3px 9px !important;
+        font-size: 10.5px !important;
+    }
+    .btn-back-hero {
+        padding: 5px 10px !important;
+        font-size: 11px !important;
+    }
+}
+
+@media (max-width: 1280px) {
+    .mode-tab {
+        padding: 3px 5.5px !important;
+        font-size: 10px !important;
+    }
+    .header-modes.center-modes {
+        gap: 2px !important;
+    }
 }
