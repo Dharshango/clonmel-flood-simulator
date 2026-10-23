@@ -86,6 +86,12 @@ export function createTownSwitcherHTML(activeTownId = currentTownId) {
  * @returns {string}
  */
 export function getActiveTown() {
+    if (typeof window !== 'undefined' && window.location && window.location.hash) {
+        const hashTown = parseTownFromHash(window.location.hash);
+        if (hashTown) {
+            currentTownId = hashTown;
+        }
+    }
     return currentTownId;
 }
 

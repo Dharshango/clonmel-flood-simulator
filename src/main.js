@@ -249,6 +249,25 @@ async function init() {
     let worldLabels = [];
     let isSwitchingTown = false;
 
+    // 4. State Management variables
+    let isPlaying = true;
+    let playbackSpeed = 300; // default 300x for fast fluid feedback
+    let activeMode = 'live';
+    let isSideBySide = false;
+    let currentScenario = 'baseline-monsoon';
+    let tweenCamera = null;
+    let cameraVantageIndex = 0;
+    let activeBarrierTool = 'wall';
+    let pendingBarrierPoint = null;
+    let sideBySideOverlay = typeof document !== 'undefined' ? document.getElementById('side-by-side-overlay') : null;
+    let statBarrierLength = typeof document !== 'undefined' ? document.getElementById('stat-barrier-length') : null;
+    let scWallLength = typeof document !== 'undefined' ? document.getElementById('sc-wall-length') : null;
+    let scSavedBldgs = typeof document !== 'undefined' ? document.getElementById('sc-saved-bldgs') : null;
+    let scProtectRate = typeof document !== 'undefined' ? document.getElementById('sc-protect-rate') : null;
+    let scResilienceIndex = typeof document !== 'undefined' ? document.getElementById('sc-resilience-index') : null;
+    let scDeployTime = typeof document !== 'undefined' ? document.getElementById('sc-deploy-time') : null;
+    let barrierStatusText = typeof document !== 'undefined' ? document.getElementById('barrier-status-text') : null;
+
     // Helper: Safely tear down and dispose town 3D objects and simulator buffers
     function teardownTownModel() {
         if (selectedInspectUV) selectedInspectUV = null;
@@ -910,25 +929,10 @@ async function init() {
     // Wire up Town Switcher UI component
     initTownSwitcher(switchTown);
 
-    // 4. State Management
-
-    let isPlaying = true;
-
-    let playbackSpeed = 300; // default 300x for fast fluid feedback
-
-    let activeMode = 'live';
-
-    let isSideBySide = false;
-
-    let currentScenario = 'flood100';
-
-    let tweenCamera = null;
-
-    let cameraVantageIndex = 0;
-
-    let activeBarrierTool = 'wall';
-
-    let pendingBarrierPoint = null;
+    // 4. State Management (initialized above)
+    if (!sideBySideOverlay && typeof document !== 'undefined') {
+        sideBySideOverlay = document.getElementById('side-by-side-overlay');
+    }
 
     
 
@@ -1018,7 +1022,7 @@ async function init() {
 
     const explainableForecastView = document.getElementById('explainable-forecast-view');
 
-    const sideBySideOverlay = document.getElementById('side-by-side-overlay');
+    sideBySideOverlay = document.getElementById('side-by-side-overlay');
 
     
 
@@ -1258,7 +1262,7 @@ async function init() {
 
     const btnToolPreset = document.getElementById('btn-tool-preset');
 
-    const statBarrierLength = document.getElementById('stat-barrier-length');
+    statBarrierLength = document.getElementById('stat-barrier-length');
 
     const statBarrierHeight = document.getElementById('stat-barrier-height');
 
@@ -1266,7 +1270,7 @@ async function init() {
 
     const btnClearBarriers = document.getElementById('btn-clear-barriers');
 
-    const barrierStatusText = document.getElementById('barrier-status-text');
+    barrierStatusText = document.getElementById('barrier-status-text');
 
     // Barrier Configuration & Dimension Elements
 
@@ -1326,15 +1330,15 @@ async function init() {
 
     // Intervention Multi-Criteria Scorecard
 
-    const scWallLength = document.getElementById('sc-wall-length');
+    scWallLength = document.getElementById('sc-wall-length');
 
-    const scSavedBldgs = document.getElementById('sc-saved-bldgs');
+    scSavedBldgs = document.getElementById('sc-saved-bldgs');
 
-    const scProtectRate = document.getElementById('sc-protect-rate');
+    scProtectRate = document.getElementById('sc-protect-rate');
 
-    const scResilienceIndex = document.getElementById('sc-resilience-index');
+    scResilienceIndex = document.getElementById('sc-resilience-index');
 
-    const scDeployTime = document.getElementById('sc-deploy-time');
+    scDeployTime = document.getElementById('sc-deploy-time');
 
     
 
