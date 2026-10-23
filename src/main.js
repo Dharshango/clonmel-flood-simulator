@@ -331,21 +331,19 @@ async function init() {
     
 
     const launchSimulation = () => {
-
-        if (heroSection) heroSection.classList.add('hidden');
-
+        if (heroSection) {
+            heroSection.classList.add('hidden');
+            heroSection.style.display = 'none';
+        }
     };
 
     if (btnHeroLaunch) btnHeroLaunch.addEventListener('click', launchSimulation);
 
     if (btnBackHero && heroSection) {
-
         btnBackHero.addEventListener('click', () => {
-
+            heroSection.style.display = '';
             heroSection.classList.remove('hidden');
-
         });
-
     }
 
     if (brandNavHome && heroSection) {
