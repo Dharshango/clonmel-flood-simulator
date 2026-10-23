@@ -15,6 +15,7 @@ import { AppState } from './state.js';
 import { InfrastructureDependencyManager } from '../analysis/infrastructure_dependency.js';
 import { CommunityEvidenceManager } from '../evidence/community_evidence.js';
 import { EmergencyCommandExerciseManager } from '../exercise/command_exercise.js';
+import { ForecastManager } from '../forecasting/forecast_manager.js';
 
 export class WorkspaceManager {
     constructor(elements, simulator, baselineSimulator, roadGraph, interventionEngine, validationMetrics, overlays, barriersManager, scene, meta, elevArray) {
@@ -38,6 +39,10 @@ export class WorkspaceManager {
         this.evidenceManager = new CommunityEvidenceManager(scene, meta);
         this.exerciseManager = new EmergencyCommandExerciseManager(scene, simulator, roadGraph, barriersManager, interventionEngine);
         
+        // Real-Time Flood Forecasting Manager
+        this.forecastManager = new ForecastManager();
+        this.forecastManager.onUpdate(() => this.updateForecastUI());
+        
         // Active Filter States
         this.evidenceActiveFilter = 'all';
         
@@ -46,6 +51,7 @@ export class WorkspaceManager {
     }
     
     initEventListeners() {
+        this.initForecastControls();
         const { tabs, overlayToggles, scenarioBtns, historicalBtns, interventionControls, storyControls } = this.elements;
         
         // 1. Top Workspace Tabs
@@ -295,6 +301,10 @@ export class WorkspaceManager {
             this.infraManager.setVisible(false);
             this.evidenceManager.setVisible(false);
             this.updateScienceView();
+        } else if (ws === 'forecast') {
+            this.infraManager.setVisible(false);
+            this.evidenceManager.setVisible(false);
+            this.updateForecastUI();
         }
         
         this.updateOverlayLegend();
@@ -981,5 +991,376 @@ export class WorkspaceManager {
         ctx.fillStyle = '#38bdf8';
         ctx.font = 'bold 12px "JetBrains Mono", monospace';
         ctx.fillText(`Peak: ${maxDepth.toFixed(2)}m  Now: ${currentDepth.toFixed(2)}m`, w - 170, 18);
+    }
+
+    initForecastControls() {
+        // Ensemble scenario buttons
+        const btnP10 = document.getElementById('btn-scenario-p10');
+        const btnP50 = document.getElementById('btn-scenario-p50');
+        const btnP90 = document.getElementById('btn-scenario-p90');
+        
+        [btnP10, btnP50, btnP90].forEach(btn => {
+            if (!btn) return;
+            btn.addEventListener('click', () => {
+                const scen = btn.dataset.fscenario;
+                this.forecastManager.setScenario(scen);
+                this.forecastManager.seekForecastStep(this.forecastManager.currentLeadTimeHours, this.simulator);
+            });
+        });
+
+        // Quick jump lead-time chips
+        const leadChips = document.querySelectorAll('.lead-chip');
+        leadChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                const hours = parseInt(chip.dataset.hours, 10);
+                this.seekForecastLeadTime(hours);
+            });
+        });
+
+        // Refresh telemetry button
+        const btnRefresh = document.getElementById('btn-refresh-telemetry');
+        if (btnRefresh) {
+            btnRefresh.addEventListener('click', async () => {
+                btnRefresh.classList.add('loading');
+                await this.forecastManager.executeForecastCycle();
+                btnRefresh.classList.remove('loading');
+            });
+        }
+
+        // Scientific Validation Modal
+        const btnOpenVal = document.getElementById('btn-open-validation-modal');
+        const modalVal = document.getElementById('forecast-validation-modal');
+        const btnCloseVal = document.getElementById('btn-close-val-modal');
+        const btnValClose = document.getElementById('btn-val-modal-close');
+
+        if (btnOpenVal && modalVal) {
+            btnOpenVal.addEventListener('click', () => {
+                modalVal.showModal();
+            });
+        }
+        if (btnCloseVal && modalVal) {
+            btnCloseVal.addEventListener('click', () => {
+                modalVal.close();
+            });
+        }
+        if (btnValClose && modalVal) {
+            btnValClose.addEventListener('click', () => {
+                modalVal.close();
+            });
+        }
+    }
+
+    seekForecastLeadTime(hours) {
+        if (!this.forecastManager) return;
+        this.forecastManager.seekForecastStep(hours, this.simulator);
+
+        // Update active lead-time chip
+        document.querySelectorAll('.lead-chip').forEach(chip => {
+            const h = parseInt(chip.dataset.hours, 10);
+            chip.classList.toggle('active', h === hours);
+        });
+
+        this.updateForecastUI();
+    }
+
+    updateForecastUI() {
+        if (!this.forecastManager) return;
+        const fm = this.forecastManager;
+
+        // 1. Platform Feed Status Badge
+        const badgeEl = document.getElementById('forecast-status-badge');
+        const pulseDot = document.getElementById('fp-pulse-dot');
+        if (badgeEl) {
+            badgeEl.className = 'pill-tag';
+            if (fm.feedStatus === 'LIVE_VERIFIED') {
+                badgeEl.classList.add('success');
+                badgeEl.textContent = 'LIVE VERIFIED';
+            } else if (fm.feedStatus === 'PARTIAL_LIVE' || fm.feedStatus === 'CACHED_PROVISIONAL') {
+                badgeEl.classList.add('info');
+                badgeEl.textContent = 'CACHED PROVISIONAL';
+            } else {
+                badgeEl.classList.add('warning');
+                badgeEl.textContent = 'OFFLINE FALLBACK';
+            }
+        }
+        if (pulseDot) {
+            pulseDot.className = 'fp-pulse-dot';
+            if (fm.feedStatus === 'LIVE_VERIFIED') {
+                // green default
+            } else if (fm.feedStatus === 'CACHED_PROVISIONAL' || fm.feedStatus === 'PARTIAL_LIVE') {
+                pulseDot.classList.add('provisional');
+            } else {
+                pulseDot.classList.add('fallback');
+            }
+        }
+
+        // 2. Feed provenance & timestamp
+        const tsLabel = document.getElementById('fp-timestamp-label');
+        if (tsLabel && fm.lastCycleTimestamp) {
+            const d = new Date(fm.lastCycleTimestamp);
+            tsLabel.textContent = `Cycle: ${d.toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} • OPW 15m Telemetry`;
+        }
+
+        // 3. Station 16011: River Suir at Clonmel
+        if (fm.telemetry && fm.telemetry.stations && fm.telemetry.stations.clonmel) {
+            const st16011 = fm.telemetry.stations.clonmel;
+            const elStage = document.getElementById('fc-clonmel-stage');
+            const elQ = document.getElementById('fc-clonmel-q');
+            const elTrend = document.getElementById('fc-clonmel-trend');
+            const elMargin = document.getElementById('fc-clonmel-margin');
+
+            if (elStage && st16011.latest) elStage.textContent = `${st16011.latest.stage.toFixed(2)} m`;
+            if (elQ && st16011.latest) {
+                const q = fm.hydrologyModel.stageToDischarge(st16011.latest.stage);
+                elQ.textContent = `${Math.round(q)} m³/s`;
+            }
+            if (elMargin && st16011.latest) {
+                const margin = 2.45 - st16011.latest.stage;
+                if (margin > 0) {
+                    elMargin.textContent = `+${margin.toFixed(2)}m (Bank Safe)`;
+                    elMargin.className = 'ro-val text-success';
+                } else {
+                    elMargin.textContent = `${Math.abs(margin).toFixed(2)}m (Overtopping)`;
+                    elMargin.className = 'ro-val text-danger';
+                }
+            }
+        }
+
+        // 4. Station 16139: Knocklofty
+        if (fm.telemetry && fm.telemetry.stations && fm.telemetry.stations.knocklofty) {
+            const kl = fm.telemetry.stations.knocklofty;
+            const elKlStage = document.getElementById('fc-knocklofty-stage');
+            if (elKlStage && kl.latest) elKlStage.textContent = `${kl.latest.stage.toFixed(2)} m`;
+        }
+
+        // 5. Met Éireann Weather
+        if (fm.telemetry && fm.telemetry.weather) {
+            const w = fm.telemetry.weather;
+            const elRainRate = document.getElementById('fc-rain-rate');
+            const elCumRain = document.getElementById('fc-rain-cum24');
+            const elWindBaro = document.getElementById('fc-wind-baro');
+
+            if (elRainRate) elRainRate.textContent = `${(w.latestRainMm || 0.0).toFixed(1)} mm/h`;
+            if (elCumRain && w.series) {
+                const cum24 = w.series.slice(0, 24).reduce((acc, r) => acc + (r.precipitation_mm || 0), 0);
+                elCumRain.textContent = `${cum24.toFixed(1)} mm`;
+            }
+            if (elWindBaro && w.series && w.series.length > 0) {
+                const curW = w.series[0];
+                elWindBaro.textContent = `${Math.round(curW.wind_speed_kmh || 14)} km/h • ${Math.round(curW.pressure_hpa || 1012)} hPa`;
+            }
+        }
+
+        // 6. Active Scenario Button Highlights
+        ['p10', 'p50', 'p90'].forEach(s => {
+            const b = document.getElementById(`btn-scenario-${s}`);
+            if (b) b.classList.toggle('active', fm.activeScenario === s);
+        });
+
+        const activeTag = document.getElementById('fc-chart-active-tag');
+        if (activeTag) {
+            if (fm.activeScenario === 'p10') activeTag.textContent = 'P10 LOW RUNOFF';
+            else if (fm.activeScenario === 'p90') activeTag.textContent = 'P90 SEVERE WORST-CASE';
+            else activeTag.textContent = 'P50 EXPECTED BASELINE';
+        }
+
+        // 7. Active Coupled SWE Parameters
+        const currentStep = fm.getCurrentStep();
+        if (currentStep) {
+            const elCoupledQ = document.getElementById('fc-coupled-q');
+            const elCoupledStage = document.getElementById('fc-coupled-stage');
+            const elCoupledSurge = document.getElementById('fc-coupled-surge');
+            const elCoupledRain = document.getElementById('fc-coupled-rain');
+
+            let q = currentStep.qP50;
+            let stage = currentStep.stageP50;
+            let surge = currentStep.surgeP50;
+            if (fm.activeScenario === 'p10') {
+                q = currentStep.qP10;
+                stage = currentStep.stageP10;
+                surge = 0.0;
+            } else if (fm.activeScenario === 'p90') {
+                q = currentStep.qP90;
+                stage = currentStep.stageP90;
+                surge = currentStep.surgeP90;
+            }
+
+            if (elCoupledQ) elCoupledQ.textContent = `${Math.round(q)} m³/s`;
+            if (elCoupledStage) elCoupledStage.textContent = `${stage.toFixed(2)} m`;
+            if (elCoupledSurge) elCoupledSurge.textContent = `+${surge.toFixed(2)} m`;
+            if (elCoupledRain) elCoupledRain.textContent = `${(currentStep.rainMmHr || 0).toFixed(1)} mm/h`;
+        }
+
+        // 8. Render Forecast Hydrograph Chart
+        this.drawForecastHydrograph();
+    }
+
+    drawForecastHydrograph() {
+        const canvas = document.getElementById('forecast-hydrograph-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const fm = this.forecastManager;
+        if (!fm || !fm.forecastPackage || !fm.forecastPackage.timeline) {
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
+            ctx.font = '11px "DM Sans", sans-serif';
+            ctx.fillText('Ingesting OPW telemetry & Met Éireann forecast...', 15, h / 2);
+            return;
+        }
+
+        const timeline = fm.forecastPackage.timeline;
+        const padLeft = 32;
+        const padRight = 12;
+        const padTop = 14;
+        const padBottom = 20;
+        const chartW = w - padLeft - padRight;
+        const chartH = h - padTop - padBottom;
+
+        // Stage axis limits: 0.0m to 4.5m
+        const minStage = 0.0;
+        const maxStage = 4.5;
+
+        const stageToY = (stage) => {
+            const clamped = Math.max(minStage, Math.min(maxStage, stage));
+            return padTop + (1.0 - (clamped - minStage) / (maxStage - minStage)) * chartH;
+        };
+
+        // Time mapping: Past 24h (-24 to 0) + Future 48h (0 to 48) => Total 72 hours
+        const totalHours = 72;
+        const hourToX = (hourRelNow) => {
+            const normalized = (hourRelNow + 24) / totalHours;
+            return padLeft + normalized * chartW;
+        };
+
+        // Grid lines (1m, 2m, 3m, 4m)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#64748b';
+        ctx.font = '9px "JetBrains Mono", monospace';
+        [1.0, 2.0, 3.0, 4.0].forEach(st => {
+            const y = stageToY(st);
+            ctx.beginPath();
+            ctx.moveTo(padLeft, y);
+            ctx.lineTo(w - padRight, y);
+            ctx.stroke();
+            ctx.fillText(`${st}m`, 6, y + 3);
+        });
+
+        // Bankfull overtopping threshold line at 2.45m
+        const yBankfull = stageToY(2.45);
+        ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)';
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(padLeft, yBankfull);
+        ctx.lineTo(w - padRight, yBankfull);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText('Bankfull 2.45m', w - padRight - 75, yBankfull - 3);
+
+        // "Now" vertical line at x = hourToX(0)
+        const xNow = hourToX(0);
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(xNow, padTop);
+        ctx.lineTo(xNow, h - padBottom);
+        ctx.stroke();
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('Now', xNow - 9, h - 8);
+
+        // 1. Shaded P10-P90 Uncertainty Envelope (Future 0 to 48h)
+        ctx.beginPath();
+        for (let i = 0; i < timeline.length; i++) {
+            const st = timeline[i];
+            const x = hourToX(st.leadTimeHours);
+            const yP90 = stageToY(st.stageP90);
+            if (i === 0) ctx.moveTo(x, yP90);
+            else ctx.lineTo(x, yP90);
+        }
+        for (let i = timeline.length - 1; i >= 0; i--) {
+            const st = timeline[i];
+            const x = hourToX(st.leadTimeHours);
+            const yP10 = stageToY(st.stageP10);
+            ctx.lineTo(x, yP10);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(245, 158, 11, 0.18)';
+        ctx.fill();
+
+        // 2. Past Observed 24h Line (Solid Cyan)
+        const observedHistory = fm.telemetry?.stations?.clonmel?.records || [];
+        if (observedHistory.length > 0) {
+            ctx.beginPath();
+            const nowMs = Date.now();
+            let isFirst = true;
+            for (const rec of observedHistory) {
+                const hourDiff = (rec.timeMs - nowMs) / 3600000;
+                if (hourDiff >= -24 && hourDiff <= 0.1) {
+                    const x = hourToX(hourDiff);
+                    const y = stageToY(rec.stage);
+                    if (isFirst) {
+                        ctx.moveTo(x, y);
+                        isFirst = false;
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+            }
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.0;
+            ctx.stroke();
+        }
+
+        // 3. Forecast Line (Dashed Amber or Red/Blue depending on active scenario)
+        ctx.beginPath();
+        ctx.setLineDash([4, 3]);
+        for (let i = 0; i < timeline.length; i++) {
+            const st = timeline[i];
+            const x = hourToX(st.leadTimeHours);
+            let targetStage = st.stageP50;
+            if (fm.activeScenario === 'p10') targetStage = st.stageP10;
+            else if (fm.activeScenario === 'p90') targetStage = st.stageP90;
+
+            const y = stageToY(targetStage);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = fm.activeScenario === 'p90' ? '#ef4444' : fm.activeScenario === 'p10' ? '#38bdf8' : '#f59e0b';
+        ctx.lineWidth = 2.0;
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // 4. Current Lead-Time Scrubber Marker
+        const curLead = fm.currentLeadTimeHours || 0;
+        const xMarker = hourToX(curLead);
+        const curStep = fm.getCurrentStep();
+        let curStage = curStep ? (fm.activeScenario === 'p10' ? curStep.stageP10 : fm.activeScenario === 'p90' ? curStep.stageP90 : curStep.stageP50) : 1.0;
+        const yMarker = stageToY(curStage);
+
+        // Vertical highlight line
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(xMarker, padTop);
+        ctx.lineTo(xMarker, h - padBottom);
+        ctx.stroke();
+
+        // Marker dot
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(xMarker, yMarker, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Lead time label
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 9px "JetBrains Mono", monospace';
+        ctx.fillText(`+${curLead}h (${curStage.toFixed(2)}m)`, Math.min(w - 75, Math.max(padLeft, xMarker - 25)), padTop + 9);
     }
 }

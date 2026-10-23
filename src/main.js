@@ -179,7 +179,7 @@ async function init() {
         });
     }
     
-    // Top Tabs & Panels (7 Workspaces)
+    // Top Tabs & Panels (8 Workspaces)
     const tabLive = document.getElementById('tab-live');
     const tabTime = document.getElementById('tab-time');
     const tabIntervention = document.getElementById('tab-intervention') || document.getElementById('tab-barrier');
@@ -187,6 +187,7 @@ async function init() {
     const tabEvidence = document.getElementById('tab-evidence');
     const tabExercise = document.getElementById('tab-exercise');
     const tabScience = document.getElementById('tab-science');
+    const tabForecast = document.getElementById('tab-forecast');
     
     const scenarioControlsView = document.getElementById('scenario-controls-view');
     const timeMachineView = document.getElementById('time-machine-view');
@@ -195,6 +196,7 @@ async function init() {
     const communityEvidenceView = document.getElementById('community-evidence-view');
     const commandExerciseView = document.getElementById('command-exercise-view');
     const scienceValidationView = document.getElementById('science-validation-view');
+    const forecastOpsView = document.getElementById('forecast-ops-view');
     const sideBySideOverlay = document.getElementById('side-by-side-overlay');
     
     // Workspace Elements Bundle for WorkspaceManager
@@ -206,7 +208,8 @@ async function init() {
             impact: tabImpact,
             evidence: tabEvidence,
             exercise: tabExercise,
-            science: tabScience
+            science: tabScience,
+            forecast: tabForecast
         },
         leftPanels: {
             live: scenarioControlsView,
@@ -215,7 +218,8 @@ async function init() {
             impact: impactIntelView,
             evidence: communityEvidenceView,
             exercise: commandExerciseView,
-            science: scienceValidationView
+            science: scienceValidationView,
+            forecast: forecastOpsView
         },
         overlayToggles: document.querySelectorAll('.overlay-toggle-btn'),
         historicalBtns: document.querySelectorAll('.historical-event-card'),
@@ -245,6 +249,14 @@ async function init() {
         meta,
         elevArray
     );
+    
+    window.workspaceManager = workspaceManager;
+    window.forecastManager = workspaceManager.forecastManager;
+    
+    // Ingest live/cached telemetry and compute real-time forecast cycle
+    workspaceManager.forecastManager.executeForecastCycle().catch(err => {
+        console.warn('Initial forecast cycle notice:', err);
+    });
     
     // Side-by-Side Comparison Readouts (Unprotected Baseline vs Protected)
     const sbsUnmitFlooded = document.getElementById('sbs-unmit-flooded');
@@ -363,6 +375,10 @@ async function init() {
                 barriersManager.loadPresets(presetsResp);
             }
             updateBarrierUI();
+        } else if (mode === 'forecast') {
+            if (!workspaceManager.forecastManager.isInitialized) {
+                workspaceManager.forecastManager.executeForecastCycle();
+            }
         }
     }
     
@@ -371,6 +387,7 @@ async function init() {
     if (tabIntervention) tabIntervention.addEventListener('click', () => setMode('intervention'));
     if (tabImpact) tabImpact.addEventListener('click', () => setMode('impact'));
     if (tabScience) tabScience.addEventListener('click', () => setMode('science'));
+    if (tabForecast) tabForecast.addEventListener('click', () => setMode('forecast'));
     
     // Interactive Map Drawing 3D Primitives & Materials
     const drawingGroup = new THREE.Group();
@@ -916,7 +933,19 @@ async function init() {
         if (scrubberKnob) scrubberKnob.style.left = `${pct}%`;
         const totalHours = Math.floor(val / 3600);
         const totalMins = Math.floor((val % 3600) / 60);
-        if (floodClockText) floodClockText.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')}`;
+        if (floodClockText) {
+            if (AppState.currentWorkspace === 'forecast') {
+                const leadH = Math.min(48, Math.max(0, Math.round((val / 21600) * 48)));
+                floodClockText.textContent = `+${leadH}h (${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')})`;
+            } else {
+                floodClockText.textContent = `${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')}`;
+            }
+        }
+        
+        if (AppState.currentWorkspace === 'forecast' && workspaceManager.forecastManager) {
+            const leadH = Math.min(48, Math.max(0, Math.round((val / 21600) * 48)));
+            workspaceManager.seekForecastLeadTime(leadH);
+        }
         
         updateTelemetry();
     }
