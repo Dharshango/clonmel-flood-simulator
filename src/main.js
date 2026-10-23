@@ -4,6 +4,7 @@ import { SWESimulator } from './simulation/swe_solver.js';
 import { createTerrainMesh, createWaterMesh } from './rendering/terrain.js';
 import { createBuildingsLayer } from './rendering/buildings.js';
 import { createRoadsLayer } from './rendering/roads.js';
+import { createBridgesLayer } from './rendering/bridges.js';
 import { createBarriersManager } from './rendering/barriers.js';
 import { createInspector } from './ui/inspector.js';
 import { exportPeakDepthMap } from './ui/export_map.js';
@@ -124,6 +125,10 @@ async function init() {
     // Roads Layer
     const roadsLayer = createRoadsLayer(meta, roadsResp, elevArray);
     scene.add(roadsLayer.group);
+    
+    // 3D Bridges Layer (Authentic Old Bridge, Gashouse Bridge, Workhouse Bridge)
+    const bridgesLayer = createBridgesLayer(meta, elevArray, roadsResp);
+    scene.add(bridgesLayer.group);
     
     // Barriers Manager
     const barriersManager = createBarriersManager(scene, meta, simulator, elevArray);
@@ -1058,10 +1063,10 @@ async function init() {
         { 
             id: 'old-bridge',
             name: 'Old Bridge', 
-            fullName: 'Old Bridge & Weir Rapids',
-            sub: 'Historic Arches & Western Inlet',
-            pos: new THREE.Vector3(-410, 180, 560), 
-            target: new THREE.Vector3(-170, 22, 323) 
+            fullName: 'Old Bridge (Droichead Ársa)',
+            sub: 'Historic Multi-Arch Bridge & Suir Island',
+            pos: new THREE.Vector3(-140, 140, 540), 
+            target: new THREE.Vector3(55, 23, 340) 
         },
         { 
             id: 'suir-island',
@@ -1243,7 +1248,7 @@ async function init() {
         { el: document.getElementById('label-gashouse'), lon: -7.6930, lat: 52.3528, yOffset: 25 },
         { el: document.getElementById('label-suir-island'), lon: -7.7042, lat: 52.3520, yOffset: 25 },
         { el: document.getElementById('label-the-quay'), lon: -7.7032, lat: 52.3538, yOffset: 25 },
-        { el: document.getElementById('label-old-bridge'), lon: -7.7075, lat: 52.3516, yOffset: 25 },
+        { el: document.getElementById('label-old-bridge'), lon: -7.7041, lat: 52.3514, yOffset: 25 },
         { el: document.getElementById('label-sarsfield'), lon: -7.7050, lat: 52.3558, yOffset: 30 }
     ];
     

@@ -250,8 +250,10 @@ void main() {
     float qxNext = qxC - dt_dx * (Fq_E - Fq_W) + u_dt * source_qx;
     float qyNext = qyC - dt_dy * (Gq_N - Gq_S) + u_dt * source_qy;
     
-    // Add uniform rain
-    hNext += u_rainRate * u_dt;
+    // Add rain only where elevation permits accumulation (valleys & urban flatlands, not mountain slopes)
+    if (zbC < 22.0) {
+        hNext += u_rainRate * u_dt;
+    }
     
     // Dynamic River Suir channel flood stage swelling
     // When river inflow increases, water stage inside channel rises dynamically,
@@ -452,10 +454,10 @@ void main() {
             }
         }
         
-        // Direct rainfall accumulation on urban streets
-        if (u_rainRate > 0.0) {
-            float rainRunoff = (u_rainRate / 1000.0) * (u_targetTime / 3600.0) * 0.06;
-            h += clamp(rainRunoff, 0.0, 0.35);
+        // Direct rainfall accumulation on urban streets only in low-lying flat depressions prone to ponding
+        if (u_rainRate > 0.0 && zb < 21.8) {
+            float rainRunoff = (u_rainRate / 1000.0) * (u_targetTime / 3600.0) * 0.04 * (1.0 - smoothstep(19.5, 21.8, zb));
+            h += clamp(rainRunoff, 0.0, 0.22);
             peakH = max(peakH, h);
         }
     }

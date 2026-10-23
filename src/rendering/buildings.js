@@ -206,29 +206,32 @@ export function createBuildingsLayer(meta, buildingsData, elevArray, riverMaskIm
             const gElev = b.groundElev;
             
             let maxH = 0.0;
-            for (let k = 0; k < len; k++) {
-                const off = offsets[k];
-                const h = buf[off];
-                if (h >= 0.05) {
-                    if (isRiverArr[k] === 1) {
-                        // In river channel, only counts as flood if water surface rises above building ground elevation
-                        const overtop = (cellElevs[k] + h) - gElev;
-                        if (overtop > maxH) maxH = overtop;
-                    } else {
-                        // Overland street flood touching/immersing building
-                        if (h > maxH) maxH = h;
+            // Physical fluvial flood envelope: River Suir peak flood elevation in Clonmel reaches ~20.5m - 20.8m OD.
+            // Buildings above 22.2m OD (terraces, upper town, hills) are physically immune from River Suir overtopping.
+            if (gElev <= 22.2) {
+                for (let k = 0; k < len; k++) {
+                    const off = offsets[k];
+                    const h = buf[off];
+                    if (h >= 0.08) {
+                        const cellElev = cellElevs[k];
+                        const wse = cellElev + h;
+                        // Flood occurs when water surface elevation overtops building ground threshold
+                        const overtop = wse - gElev;
+                        if (overtop > maxH) {
+                            maxH = overtop;
+                        }
                     }
                 }
             }
             
-            // Mark building only if overland flood water reaches/rushes through it (h >= 0.05m)
-            const isFloodedNow = maxH >= 0.05;
+            // Mark building only if overland flood water actually reaches doorstep (overtop >= 0.10m)
+            const isFloodedNow = maxH >= 0.10;
             b.isFlooded = isFloodedNow;
             b.depth = maxH;
             
             if (isFloodedNow) {
                 floodedCount++;
-                if (maxH >= 0.40) {
+                if (maxH >= 0.35) {
                     endangeredCount++;
                     b.status = 'endangered';
                 } else {
@@ -239,21 +242,19 @@ export function createBuildingsLayer(meta, buildingsData, elevArray, riverMaskIm
                 b.status = 'safe';
             }
             
-            if (baseBuf) {
+            if (baseBuf && gElev <= 22.2) {
                 let baseMaxH = 0.0;
                 for (let k = 0; k < len; k++) {
                     const off = offsets[k];
                     const h = baseBuf[off];
-                    if (h >= 0.05) {
-                        if (isRiverArr[k] === 1) {
-                            const overtop = (cellElevs[k] + h) - gElev;
-                            if (overtop > baseMaxH) baseMaxH = overtop;
-                        } else {
-                            if (h > baseMaxH) baseMaxH = h;
-                        }
+                    if (h >= 0.08) {
+                        const cellElev = cellElevs[k];
+                        const wse = cellElev + h;
+                        const overtop = wse - gElev;
+                        if (overtop > baseMaxH) baseMaxH = overtop;
                     }
                 }
-                const wasFloodedInBase = baseMaxH >= 0.05;
+                const wasFloodedInBase = baseMaxH >= 0.10;
                 // If flooded without barrier, but dry with barrier: IT IS SAVED!
                 b.isSaved = wasFloodedInBase && !isFloodedNow;
                 if (b.isSaved) {

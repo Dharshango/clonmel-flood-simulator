@@ -807,19 +807,19 @@ export class WorkspaceManager {
         
         if (eventKey === 'storm_frank_2015') {
             inflow = 465;
-            rain = 65;
+            rain = 0; // Real-world fluvial river overtopping (no artificial mountain rain puddles)
             surge = 0.45;
             eventName = 'Storm Frank (December 2015)';
             eventDesc = 'Continuous heavy Atlantic depression. River Suir crested at 4.2m OD at Convent Bridge with severe commercial inundation across the Irishtown and Quay corridors.';
         } else if (eventKey === 'flood_2008') {
             inflow = 420;
-            rain = 40;
+            rain = 0; // Real-world fluvial river overtopping
             surge = 0.20;
             eventName = 'River Suir Flood (January 2008)';
             eventDesc = 'Overland flow overtopped the Old Bridge quay wall and severed vehicular traffic along the N24 and Western Road.';
         } else if (eventKey === 'flood_2000') {
             inflow = 480;
-            rain = 75;
+            rain = 0; // Real-world fluvial river overtopping
             surge = 0.50;
             eventName = 'Historic Benchmark Flood (November 2000)';
             eventDesc = 'Largest modern unmitigated flood event prior to the Clonmel Flood Relief Scheme. Over 350 properties severely flooded.';

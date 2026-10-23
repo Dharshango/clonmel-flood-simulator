@@ -137,13 +137,19 @@ export function createWaterMesh(meta, terrainGeometry, simulator) {
         vec4 water = sampleSmooth(u_waterTex, vUv);
         float h = water.r;
         
-        // Soft boundary discard: strictly ignore sub-centimeter numerical moisture on dry land
-        if (h < 0.025) {
-            discard;
-        }
-        
         vec4 elev = sampleSmooth(u_elevTex, vUv);
         float isRiver = elev.b; // 1.0 inside River Suir bed, 0.0 on flood plains / streets
+        
+        // In natural river channel, render water depths > 0.02m
+        // On dry terrain and hillslopes, discard trace puddles, numerical noise, and any water on upland hills (elev > 22.0m)
+        if (isRiver > 0.1) {
+            if (h < 0.02) discard;
+        } else {
+            // Discard any moisture on upland hills (elev > 22.0m OD)
+            if (elev.r > 22.0) discard;
+            // On low-lying floodplain (elev <= 22.0m), require true flood depth (> 0.06m)
+            if (h < 0.06) discard;
+        }
         
         // 1. Natural River Suir Channel: Pure, silky, vibrant royal sapphire-azure blue (ZERO glitch, zero orange in river)
         vec3 suirDeep = vec3(0.04, 0.22, 0.82); // deep royal sapphire blue

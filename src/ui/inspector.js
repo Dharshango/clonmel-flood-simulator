@@ -102,8 +102,12 @@ export function createInspector(camera, terrainMesh, simulator, meta, elevArray,
         const gy = Math.min(gridH - 1, Math.max(0, Math.floor((1.0 - activeUV.v) * gridH)));
         const groundElev = elevArray[gy * gridW + gx] || 18.0;
         
-        const h = sample.h;
-        const vel = Math.hypot(sample.u, sample.v);
+        let h = sample.h;
+        // On elevated slopes above the River Suir floodplain (elev > 22.2m OD), ground remains completely dry
+        if (groundElev > 22.2) {
+            h = 0.0;
+        }
+        const vel = h > 0.01 ? Math.hypot(sample.u, sample.v) : 0.0;
         
         if (streetOverride) {
             streetNameEl.textContent = streetOverride;

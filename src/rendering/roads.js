@@ -20,7 +20,28 @@ export function createRoadsLayer(meta, roadsData, elevArray) {
         const linePoints = [];
         const samples = [];
         
-        for (let p of pts) {
+        const isBridgeRoad = r.bridge === 'yes' || (r.name && r.name.toLowerCase().includes('bridge'));
+        
+        // Sample start and end elevations for bridges to keep them elevated above riverbed
+        let startElev = 0, endElev = 0;
+        if (isBridgeRoad && pts.length >= 2) {
+            const pStart = pts[0];
+            const pEnd = pts[pts.length - 1];
+            const uS = (pStart[0] - bbox.west) / w_deg;
+            const vS = (pStart[1] - bbox.south) / h_deg;
+            const gxS = Math.min(gridW - 1, Math.max(0, Math.floor(uS * gridW)));
+            const gyS = Math.min(gridH - 1, Math.max(0, Math.floor((1.0 - vS) * gridH)));
+            startElev = (elevArray[gyS * gridW + gxS] || 18.0) * 1.2;
+
+            const uE = (pEnd[0] - bbox.west) / w_deg;
+            const vE = (pEnd[1] - bbox.south) / h_deg;
+            const gxE = Math.min(gridW - 1, Math.max(0, Math.floor(uE * gridW)));
+            const gyE = Math.min(gridH - 1, Math.max(0, Math.floor((1.0 - vE) * gridH)));
+            endElev = (elevArray[gyE * gridW + gxE] || 18.0) * 1.2;
+        }
+
+        for (let ptIdx = 0; ptIdx < pts.length; ptIdx++) {
+            const p = pts[ptIdx];
             const lon = p[0];
             const lat = p[1];
             
@@ -31,7 +52,14 @@ export function createRoadsLayer(meta, roadsData, elevArray) {
             const v = (lat - bbox.south) / h_deg;
             const gx = Math.min(gridW - 1, Math.max(0, Math.floor(u * gridW)));
             const gy = Math.min(gridH - 1, Math.max(0, Math.floor((1.0 - v) * gridH)));
-            const elev = (elevArray[gy * gridW + gx] || 18.0) * 1.2;
+            let elev = (elevArray[gy * gridW + gx] || 18.0) * 1.2;
+
+            // Bridge decks span horizontally above riverbed rather than dipping into underwater channels
+            if (isBridgeRoad && pts.length >= 2) {
+                const alpha = ptIdx / (pts.length - 1);
+                const bridgeDeckY = THREE.MathUtils.lerp(startElev, endElev, alpha);
+                elev = Math.max(elev, bridgeDeckY);
+            }
             
             // Offset slightly above terrain (0.4m)
             linePoints.push(new THREE.Vector3(posX, elev + 0.4, posZ));
