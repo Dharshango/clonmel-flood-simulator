@@ -33,266 +33,600 @@ import { ValidationMetrics } from './analysis/validation_metrics.js';
 import { createAnalyticalOverlays } from './rendering/analytical_overlays.js';
 
 import { WorkspaceManager } from './ui/workspaces.js';
+import { TOWNS, getTownConfig, DEFAULT_TOWN_ID } from './config/towns.js';
+import { initTownSwitcher, getActiveTown, setActiveTown } from './ui/town_switcher.js';
 
-async function init() {
+/**
+ * Loads GIS and raster assets dynamically for a given town configuration.
+ * @param {object} townConfig 
+ * @returns {Promise<object>} Loaded datasets and textures
+ */
+let activeSwitchTownFn = null;
 
-    console.log('Initializing Hydroverse (Clonmel, River Suir)...');
+export async function switchTown(newTownId) {
+    if (activeSwitchTownFn) {
+        return await activeSwitchTownFn(newTownId);
+    }
+}
 
-    
-
-    // 1. Fetch GIS Data
+export async function loadTownData(townConfig) {
+    const basePath = townConfig.dataPath || '/data/';
+    const loader = new THREE.TextureLoader();
 
     const [meta, elevBuffer, bldgsResp, roadsResp, presetsResp] = await Promise.all([
-
-        fetch('/data/terrain.json').then(r => r.json()),
-
-        fetch('/data/elevation_hydro.bin').then(r => r.arrayBuffer()),
-
-        fetch('/data/buildings.json').then(r => r.json()),
-
-        fetch('/data/roads.json').then(r => r.json()),
-
-        fetch('/data/barriers_preset.json').then(r => r.json())
-
+        fetch(`${basePath}terrain.json`).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status} loading ${basePath}terrain.json`);
+            return r.json();
+        }),
+        fetch(`${basePath}elevation_hydro.bin`).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status} loading ${basePath}elevation_hydro.bin`);
+            return r.arrayBuffer();
+        }),
+        fetch(`${basePath}buildings.json`).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status} loading ${basePath}buildings.json`);
+            return r.json();
+        }),
+        fetch(`${basePath}roads.json`).then(r => {
+            if (!r.ok) throw new Error(`HTTP ${r.status} loading ${basePath}roads.json`);
+            return r.json();
+        }),
+        fetch(`${basePath}barriers_preset.json`)
+            .then(r => (r.ok ? r.json() : []))
+            .catch(() => [])
     ]);
-
-    
 
     const elevArray = new Float32Array(elevBuffer);
 
-    
-
-    // Texture masks
-
-    const loader = new THREE.TextureLoader();
-
     const [bldgMaskImg, riverMaskImg, normalTex] = await Promise.all([
-
-        new Promise(res => {
-
+        new Promise((res, rej) => {
             const img = new Image();
-
             img.onload = () => res(img);
-
-            img.src = '/data/buildings_mask.png';
-
+            img.onerror = () => rej(new Error(`Failed to load ${basePath}buildings_mask.png`));
+            img.src = `${basePath}buildings_mask.png`;
         }),
-
-        new Promise(res => {
-
+        new Promise((res, rej) => {
             const img = new Image();
-
             img.onload = () => res(img);
-
-            img.src = '/data/river_mask.png';
-
+            img.onerror = () => rej(new Error(`Failed to load ${basePath}river_mask.png`));
+            img.src = `${basePath}river_mask.png`;
         }),
-
         new Promise(res => {
-
-            loader.load('/data/terrain_normal.png', tex => res(tex));
-
+            loader.load(`${basePath}terrain_normal.png`, tex => res(tex));
         })
-
     ]);
 
-    
+    return {
+        meta,
+        elevBuffer,
+        elevArray,
+        bldgsResp,
+        roadsResp,
+        presetsResp,
+        bldgMaskImg,
+        riverMaskImg,
+        normalTex
+    };
+}
 
-    // 2. Setup Three.js Scene and Renderer
+async function init() {
+    const initialTownId = typeof getActiveTown === 'function' ? getActiveTown() : DEFAULT_TOWN_ID;
+    let currentTownConfig = getTownConfig(initialTownId);
+    console.log(`Initializing Hydroverse (${currentTownConfig.name}, ${currentTownConfig.riverName})...`);
 
+    // 1. Setup Three.js Scene, Renderer, Camera, Lighting
     const canvas = document.getElementById('three-canvas');
-
     const renderer = new THREE.WebGLRenderer({
-
         canvas,
-
         antialias: true,
-
         powerPreference: 'high-performance',
-
         preserveDrawingBuffer: true
-
     });
-
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
-
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
     renderer.shadowMap.enabled = true;
-
     renderer.shadowMap.type = THREE.PCFShadowMap;
-
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-
     renderer.toneMappingExposure = 1.05;
 
-    
-
     const scene = new THREE.Scene();
-
     scene.background = new THREE.Color(0x181e28);
-
     scene.fog = new THREE.FogExp2(0x181e28, 0.00030);
 
-    
-
-    // Camera
-
     const camera = new THREE.PerspectiveCamera(
-
         45,
-
         canvas.clientWidth / canvas.clientHeight,
-
         1,
-
         15000
-
     );
 
-    camera.position.set(-200, 750, 1100);
-
-    
-
     const controls = new OrbitControls(camera, canvas);
-
-    controls.target.set(0, 30, 0);
-
     controls.enableDamping = true;
-
     controls.dampingFactor = 0.08;
-
     controls.maxPolarAngle = Math.PI / 2 - 0.05;
-
     controls.minDistance = 50;
-
     controls.maxDistance = 5000;
-
-    controls.update();
     window.controls = controls;
 
-    
-
-    // Lighting
-
     const hemiLight = new THREE.HemisphereLight(0x94a3b8, 0x0f172a, 1.2);
-
     scene.add(hemiLight);
 
-    
-
     const sunLight = new THREE.DirectionalLight(0xfffaee, 2.3);
-
     sunLight.position.set(800, 1500, 600);
-
     sunLight.castShadow = true;
-
     sunLight.shadow.mapSize.width = 2048;
-
     sunLight.shadow.mapSize.height = 2048;
-
     sunLight.shadow.camera.near = 100;
-
     sunLight.shadow.camera.far = 4000;
-
     const d = 1600;
-
     sunLight.shadow.camera.left = -d;
-
     sunLight.shadow.camera.right = d;
-
     sunLight.shadow.camera.top = d;
-
     sunLight.shadow.camera.bottom = -d;
-
     scene.add(sunLight);
 
-    
+    // 2. Active Town State & Simulation Variables
+    let meta = null;
+    let elevBuffer = null;
+    let elevArray = null;
+    let bldgsResp = null;
+    let roadsResp = null;
+    let presetsResp = null;
+    let normalTex = null;
+    let bldgMaskImg = null;
+    let riverMaskImg = null;
 
-    // 3. Setup Simulation and Meshes
+    let simulator = null;
+    let baselineSimulator = null;
+    let terrainMesh = null;
+    let terrainGeom = null;
+    let waterMesh = null;
+    let waterMaterial = null;
+    let buildingsLayer = null;
+    let roadsLayer = null;
+    let bridgesLayer = null;
+    let barriersManager = null;
+    let inspector = null;
+    let arrivalTracker = null;
+    let roadGraph = null;
+    let interventionEngine = null;
+    let validationMetrics = null;
+    let analyticalOverlays = null;
+    let workspaceManager = null;
+    let worldLabels = [];
+    let isSwitchingTown = false;
 
-    const simulator = new SWESimulator(renderer, meta, elevArray, bldgMaskImg, riverMaskImg);
+    // Helper: Safely tear down and dispose town 3D objects and simulator buffers
+    function teardownTownModel() {
+        if (selectedInspectUV) selectedInspectUV = null;
+        if (pendingBarrierPoint) pendingBarrierPoint = null;
+        if (typeof cleanupDrawingVisuals === 'function') cleanupDrawingVisuals();
 
-    const baselineSimulator = new SWESimulator(renderer, meta, elevArray, bldgMaskImg, riverMaskImg);
+        if (analyticalOverlays && analyticalOverlays.mesh) {
+            scene.remove(analyticalOverlays.mesh);
+            if (analyticalOverlays.mesh.geometry) analyticalOverlays.mesh.geometry.dispose();
+            if (analyticalOverlays.mesh.material) {
+                if (Array.isArray(analyticalOverlays.mesh.material)) analyticalOverlays.mesh.material.forEach(m => m.dispose());
+                else analyticalOverlays.mesh.material.dispose();
+            }
+            analyticalOverlays = null;
+        }
 
-    window.simulator = simulator;
+        if (barriersManager) {
+            barriersManager.clearAll();
+            if (barriersManager.group) {
+                scene.remove(barriersManager.group);
+                barriersManager.group.traverse(child => {
+                    if (child.geometry) child.geometry.dispose();
+                    if (child.material) {
+                        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                        else child.material.dispose();
+                    }
+                });
+            }
+            barriersManager = null;
+        }
 
-    window.baselineSimulator = baselineSimulator;
+        if (inspector) {
+            if (typeof inspector.hide === 'function') inspector.hide();
+            if (inspector.pinGroup) scene.remove(inspector.pinGroup);
+            inspector = null;
+        }
 
-    
+        if (bridgesLayer && bridgesLayer.group) {
+            scene.remove(bridgesLayer.group);
+            bridgesLayer.group.traverse(child => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                    else child.material.dispose();
+                }
+            });
+            bridgesLayer = null;
+        }
 
-    // Terrain Mesh (Deep Black Ground)
+        if (roadsLayer && roadsLayer.group) {
+            scene.remove(roadsLayer.group);
+            roadsLayer.group.traverse(child => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+                    else child.material.dispose();
+                }
+            });
+            roadsLayer = null;
+        }
 
-    const { mesh: terrainMesh, geometry: terrainGeom } = createTerrainMesh(meta, elevArray, normalTex);
+        if (buildingsLayer && buildingsLayer.mesh) {
+            scene.remove(buildingsLayer.mesh);
+            if (buildingsLayer.mesh.geometry) buildingsLayer.mesh.geometry.dispose();
+            if (buildingsLayer.mesh.material) {
+                if (Array.isArray(buildingsLayer.mesh.material)) buildingsLayer.mesh.material.forEach(m => m.dispose());
+                else buildingsLayer.mesh.material.dispose();
+            }
+            buildingsLayer = null;
+        }
 
-    scene.add(terrainMesh);
+        if (waterMesh) {
+            scene.remove(waterMesh);
+            if (waterMesh.geometry) waterMesh.geometry.dispose();
+            waterMesh = null;
+        }
+        if (waterMaterial) {
+            waterMaterial.dispose();
+            waterMaterial = null;
+        }
 
-    
+        if (terrainMesh) {
+            scene.remove(terrainMesh);
+            if (terrainMesh.geometry) terrainMesh.geometry.dispose();
+            if (terrainMesh.material) {
+                if (terrainMesh.material.map) terrainMesh.material.map.dispose();
+                if (terrainMesh.material.normalMap) terrainMesh.material.normalMap.dispose();
+                terrainMesh.material.dispose();
+            }
+            terrainMesh = null;
+            terrainGeom = null;
+        }
 
-    // Water Mesh (Smooth Royal Blue Ribbon, No Glitch)
+        if (normalTex) {
+            normalTex.dispose();
+            normalTex = null;
+        }
 
-    const { waterMesh, waterMaterial } = createWaterMesh(meta, terrainGeom, simulator);
+        const disposeSim = (s) => {
+            if (!s) return;
+            if (typeof s.dispose === 'function') {
+                s.dispose();
+            } else {
+                if (s.targetA) s.targetA.dispose();
+                if (s.targetB) s.targetB.dispose();
+                if (s.elevTexture) s.elevTexture.dispose();
+                if (s.barrierTexture) s.barrierTexture.dispose();
+                if (s.computeMaterial) s.computeMaterial.dispose();
+                if (s.initMaterial) s.initMaterial.dispose();
+                if (s.seekMaterial) s.seekMaterial.dispose();
+                if (s.quadGeom) s.quadGeom.dispose();
+            }
+        };
 
-    scene.add(waterMesh);
+        disposeSim(simulator);
+        disposeSim(baselineSimulator);
+        simulator = null;
+        baselineSimulator = null;
+    }
 
-    
+    // Helper: Mount town model into scene and wire simulation
+    function mountTownModel(townConfig, data) {
+        meta = data.meta;
+        elevBuffer = data.elevBuffer;
+        elevArray = data.elevArray;
+        bldgsResp = data.bldgsResp;
+        roadsResp = data.roadsResp;
+        presetsResp = data.presetsResp;
+        normalTex = data.normalTex;
+        bldgMaskImg = data.bldgMaskImg;
+        riverMaskImg = data.riverMaskImg;
 
-    // 3D Buildings Layer (Architectural Gray)
+        // 1. Simulators
+        simulator = new SWESimulator(renderer, meta, elevArray, bldgMaskImg, riverMaskImg);
+        baselineSimulator = new SWESimulator(renderer, meta, elevArray, bldgMaskImg, riverMaskImg);
 
-    const buildingsLayer = createBuildingsLayer(meta, bldgsResp, elevArray, riverMaskImg);
+        // Configure boundary conditions if non-Clonmel (e.g. Dibrugarh)
+        const isClonmel = meta.bbox.south > 50;
+        if (!isClonmel) {
+            const h_deg = meta.bbox.north - meta.bbox.south;
+            const inletLat = meta.inletLat || 27.489;
+            const outletLat = meta.outletLat || 27.495;
+            const inletUV_Y = (inletLat - meta.bbox.south) / h_deg;
+            const outletUV_Y = (outletLat - meta.bbox.south) / h_deg;
+            
+            for (const sim of [simulator, baselineSimulator]) {
+                sim.inletYMin = inletUV_Y - 0.05;
+                sim.inletYMax = inletUV_Y + 0.05;
+                sim.outletYMin = outletUV_Y - 0.05;
+                sim.outletYMax = outletUV_Y + 0.05;
+                if (sim.computeMaterial && sim.computeMaterial.uniforms) {
+                    sim.computeMaterial.uniforms.u_inletYMin.value = sim.inletYMin;
+                    sim.computeMaterial.uniforms.u_inletYMax.value = sim.inletYMax;
+                    sim.computeMaterial.uniforms.u_outletYMin.value = sim.outletYMin;
+                    sim.computeMaterial.uniforms.u_outletYMax.value = sim.outletYMax;
+                }
+                if (sim.initMaterial && sim.initMaterial.uniforms) {
+                    sim.initMaterial.uniforms.u_baseWaterLevel.value = meta.base_water_level || 104.5;
+                }
+                sim.reset();
+            }
+        }
 
-    scene.add(buildingsLayer.mesh);
+        window.simulator = simulator;
+        window.baselineSimulator = baselineSimulator;
 
-    
+        // 2. Terrain Mesh
+        const terrainRes = createTerrainMesh(meta, elevArray, normalTex);
+        terrainMesh = terrainRes.mesh;
+        terrainGeom = terrainRes.geometry;
+        scene.add(terrainMesh);
 
-    // Roads Layer
+        // 3. Water Mesh
+        const waterRes = createWaterMesh(meta, terrainGeom, simulator);
+        waterMesh = waterRes.waterMesh;
+        waterMaterial = waterRes.waterMaterial;
+        scene.add(waterMesh);
 
-    const roadsLayer = createRoadsLayer(meta, roadsResp, elevArray);
+        // 4. Buildings Layer
+        buildingsLayer = createBuildingsLayer(meta, bldgsResp, elevArray, riverMaskImg);
+        scene.add(buildingsLayer.mesh);
 
-    scene.add(roadsLayer.group);
+        // 5. Roads Layer
+        roadsLayer = createRoadsLayer(meta, roadsResp, elevArray);
+        scene.add(roadsLayer.group);
 
-    
+        // 6. Bridges Layer (only if town is Clonmel)
+        if (townConfig.id === 'clonmel') {
+            bridgesLayer = createBridgesLayer(meta, elevArray, roadsResp);
+            scene.add(bridgesLayer.group);
+        } else {
+            bridgesLayer = null;
+        }
 
-    // 3D Bridges Layer (Authentic Old Bridge, Gashouse Bridge, Workhouse Bridge)
+        // 7. Barriers Manager
+        barriersManager = createBarriersManager(scene, meta, simulator, elevArray);
+        barriersManager.clearAll();
+        window.barriersManager = barriersManager;
 
-    const bridgesLayer = createBridgesLayer(meta, elevArray, roadsResp);
+        // 8. Inspector
+        inspector = createInspector(camera, terrainMesh, simulator, meta, elevArray, roadsResp);
+        scene.add(inspector.pinGroup);
 
-    scene.add(bridgesLayer.group);
+        // 9. Analytical Modules & Overlays
+        arrivalTracker = new ArrivalDurationTracker(meta.grid_w, meta.grid_h, meta.bbox);
+        roadGraph = new RoadGraphAnalyzer(roadsResp, meta, elevArray);
+        interventionEngine = new InterventionEngine(meta.grid_w, meta.grid_h, meta);
+        validationMetrics = new ValidationMetrics(meta);
+        analyticalOverlays = createAnalyticalOverlays(meta, terrainGeom, simulator, baselineSimulator, arrivalTracker, interventionEngine);
+        scene.add(analyticalOverlays.mesh);
 
-    
+        // 10. Update WorkspaceManager references if already initialized
+        if (workspaceManager) {
+            workspaceManager.simulator = simulator;
+            workspaceManager.baselineSimulator = baselineSimulator;
+            workspaceManager.roadGraph = roadGraph;
+            workspaceManager.interventionEngine = interventionEngine;
+            workspaceManager.validationMetrics = validationMetrics;
+            workspaceManager.overlays = analyticalOverlays;
+            workspaceManager.barriersManager = barriersManager;
+            workspaceManager.meta = meta;
+            workspaceManager.elevArray = elevArray;
 
-    // Barriers Manager
+            if (workspaceManager.exerciseManager) {
+                workspaceManager.exerciseManager.simulator = simulator;
+                workspaceManager.exerciseManager.roadGraph = roadGraph;
+                workspaceManager.exerciseManager.barriersManager = barriersManager;
+                workspaceManager.exerciseManager.interventionEngine = interventionEngine;
+            }
 
-    const barriersManager = createBarriersManager(scene, meta, simulator, elevArray);
+            if (workspaceManager.defenceManager && typeof workspaceManager.defenceManager.loadDefenceDataset === 'function') {
+                workspaceManager.defenceManager.loadDefenceDataset(`${townConfig.dataPath}flood_defences.json`);
+            }
 
-    // Start clean without preset compounds
+            workspaceManager.updateView();
+        }
 
-    barriersManager.clearAll();
-    window.barriersManager = barriersManager;
+        // 11. Camera repositioning
+        if (townConfig.id === 'clonmel') {
+            camera.position.set(-200, 750, 1100);
+            controls.target.set(0, 30, 0);
+        } else {
+            const cam = townConfig.defaultCamera || { position: { x: 0, y: 400, z: 480 }, target: { x: 0, y: 0, z: 0 } };
+            camera.position.set(cam.position.x, cam.position.y, cam.position.z);
+            controls.target.set(cam.target.x, cam.target.y, cam.target.z);
+        }
+        controls.update();
 
-    
+        // 12. Update HUD & world labels
+        updateHUDForTown(townConfig);
+        updateWorldLabelsForTown(townConfig);
 
-    // Inspector
+        // 13. Reapply scenario
+        if (typeof applyScenario === 'function') {
+            applyScenario('flood100');
+        }
+    }
 
-    const inspector = createInspector(camera, terrainMesh, simulator, meta, elevArray, roadsResp);
+    // Helper: Switch active town dynamically
+    async function switchTown(newTownId) {
+        if (isSwitchingTown) return;
+        if (!TOWNS[newTownId]) {
+            console.warn(`[switchTown] Unknown town "${newTownId}", falling back to ${DEFAULT_TOWN_ID}`);
+            newTownId = DEFAULT_TOWN_ID;
+        }
+        if (currentTownConfig && currentTownConfig.id === newTownId) {
+            return;
+        }
 
-    scene.add(inspector.pinGroup);
+        isSwitchingTown = true;
+        console.log(`[switchTown] Transitioning from ${currentTownConfig?.name || 'unknown'} to ${newTownId}...`);
+        setActiveTown(newTownId, true);
+        const nextConfig = getTownConfig(newTownId);
 
-    // 3.5 Analytical Modules & Overlays
+        try {
+            const nextData = await loadTownData(nextConfig);
+            teardownTownModel();
+            currentTownConfig = nextConfig;
+            mountTownModel(currentTownConfig, nextData);
+            console.log(`[switchTown] Successfully transitioned to ${nextConfig.name}`);
+        } catch (err) {
+            console.error(`[switchTown] Failed switching to ${newTownId}:`, err);
+        } finally {
+            isSwitchingTown = false;
+        }
+    }
+    window.switchTown = switchTown;
+    activeSwitchTownFn = switchTown;
+    window.currentTownConfig = currentTownConfig;
 
-    const arrivalTracker = new ArrivalDurationTracker(meta.grid_w, meta.grid_h, meta.bbox);
+    function updateHUDForTown(cfg) {
+        if (typeof document === 'undefined') return;
 
-    const roadGraph = new RoadGraphAnalyzer(roadsResp, meta, elevArray);
+        document.title = `${cfg.name} Flood Simulation & Intelligence Platform`;
 
-    const interventionEngine = new InterventionEngine(meta.grid_w, meta.grid_h, meta);
+        const stationTitle = document.querySelector('.station-title');
+        if (stationTitle) {
+            stationTitle.textContent = `${cfg.gauge.name} (${cfg.riverName})`;
+        }
 
-    const validationMetrics = new ValidationMetrics(meta);
+        const readoutItems = document.querySelectorAll('.station-card .station-readout-item');
+        if (readoutItems && readoutItems.length >= 3) {
+            const stageVal = readoutItems[0]?.querySelector('.st-val');
+            const bankfullLbl = readoutItems[1]?.querySelector('.st-lbl');
+            const bankfullVal = readoutItems[1]?.querySelector('.st-val');
+            const dischargeVal = readoutItems[2]?.querySelector('.st-val');
+            const alertStatusVal = readoutItems[3]?.querySelector('.st-val');
 
-    const analyticalOverlays = createAnalyticalOverlays(meta, terrainGeom, simulator, baselineSimulator, arrivalTracker, interventionEngine);
+            if (cfg.id === 'dibrugarh') {
+                if (stageVal) stageVal.textContent = '104.50 m MSL';
+                if (bankfullLbl) bankfullLbl.textContent = 'Danger Level:';
+                if (bankfullVal) bankfullVal.textContent = '105.70 m MSL';
+                if (dischargeVal) dischargeVal.textContent = '24,500 m³/s';
+                if (alertStatusVal) {
+                    alertStatusVal.textContent = 'MONSOON STAGE';
+                    alertStatusVal.style.color = '#38bdf8';
+                }
+            } else {
+                if (stageVal) stageVal.textContent = '2.38 m OD';
+                if (bankfullLbl) bankfullLbl.textContent = 'Bankfull Level:';
+                if (bankfullVal) bankfullVal.textContent = '2.80 m OD';
+                if (dischargeVal) dischargeVal.textContent = '142 m³/s';
+                if (alertStatusVal) {
+                    alertStatusVal.textContent = 'NORMAL FLOW';
+                    alertStatusVal.style.color = '#34d399';
+                }
+            }
+        }
 
-    scene.add(analyticalOverlays.mesh);
+        const inflowLabel = document.querySelector('.slider-field .slider-labels span:first-child');
+        if (inflowLabel) {
+            inflowLabel.textContent = `${cfg.riverName} Inflow`;
+        }
 
-    
+        const roadsList = document.getElementById('roads-list');
+        if (roadsList) {
+            if (cfg.id === 'dibrugarh') {
+                roadsList.innerHTML = `
+                    <div class="road-entry passable">
+                        <span class="r-name">AT Road (Highway)</span>
+                        <span class="r-tag">Passable</span>
+                    </div>
+                    <div class="road-entry passable">
+                        <span class="r-name">HS Road</span>
+                        <span class="r-tag">Passable</span>
+                    </div>
+                    <div class="road-entry passable">
+                        <span class="r-name">DTP Dyke Service Rd</span>
+                        <span class="r-tag">Passable</span>
+                    </div>
+                `;
+            } else {
+                roadsList.innerHTML = `
+                    <div class="road-entry passable">
+                        <span class="r-name">The New Quay</span>
+                        <span class="r-tag">Passable</span>
+                    </div>
+                    <div class="road-entry passable">
+                        <span class="r-name">Old Bridge</span>
+                        <span class="r-tag">Passable</span>
+                    </div>
+                    <div class="road-entry passable">
+                        <span class="r-name">Abbey Street</span>
+                        <span class="r-tag">Passable</span>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    function updateWorldLabelsForTown(cfg) {
+        if (typeof document === 'undefined') return;
+        const container = document.getElementById('world-labels-container');
+        if (!container) return;
+
+        const clonmelLabelIds = ['label-gashouse', 'label-suir-island', 'label-the-quay', 'label-old-bridge', 'label-sarsfield'];
+
+        if (cfg.id === 'clonmel') {
+            for (const id of clonmelLabelIds) {
+                const el = document.getElementById(id);
+                if (el) el.style.display = '';
+            }
+            container.querySelectorAll('.dibrugarh-world-label').forEach(el => el.style.display = 'none');
+
+            worldLabels = [
+                { el: document.getElementById('label-gashouse'), lon: -7.6930, lat: 52.3528, yOffset: 25 },
+                { el: document.getElementById('label-suir-island'), lon: -7.7042, lat: 52.3520, yOffset: 25 },
+                { el: document.getElementById('label-the-quay'), lon: -7.7032, lat: 52.3538, yOffset: 25 },
+                { el: document.getElementById('label-old-bridge'), lon: -7.7041, lat: 52.3514, yOffset: 25 },
+                { el: document.getElementById('label-sarsfield'), lon: -7.7050, lat: 52.3558, yOffset: 30 }
+            ];
+        } else {
+            for (const id of clonmelLabelIds) {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            }
+
+            const dibrugarhDefs = [
+                { id: 'label-dtp-dyke', title: 'DTP Dyke', sub: 'Town Protection Embankment', lon: 94.912, lat: 27.487, yOffset: 25 },
+                { id: 'label-riverfront', title: 'Brahmaputra Riverfront', sub: 'North River Corridor', lon: 94.920, lat: 27.492, yOffset: 25 },
+                { id: 'label-thana-chariali', title: 'Thana Chariali', sub: 'Commercial Hub', lon: 94.917, lat: 27.483, yOffset: 20 },
+                { id: 'label-graham-bazaar', title: 'Graham Bazaar', sub: 'Low-Lying Urban Basin', lon: 94.908, lat: 27.481, yOffset: 20 },
+                { id: 'label-at-road', title: 'AT Road', sub: 'Primary Highway Corridor', lon: 94.915, lat: 27.479, yOffset: 20 }
+            ];
+
+            worldLabels = dibrugarhDefs.map(def => {
+                let el = document.getElementById(def.id);
+                if (!el) {
+                    el = document.createElement('div');
+                    el.className = 'world-label dibrugarh-world-label';
+                    el.id = def.id;
+                    el.innerHTML = `
+                        <div class="label-box">
+                            <span class="title">${def.title}</span>
+                            <span class="sub">${def.sub}</span>
+                        </div>
+                        <div class="label-pin"></div>
+                    `;
+                    container.appendChild(el);
+                }
+                el.style.display = '';
+                return { el, lon: def.lon, lat: def.lat, yOffset: def.yOffset };
+            });
+        }
+    }
+
+    // Load initial town data & mount initial model
+    const initialTownData = await loadTownData(currentTownConfig);
+    mountTownModel(currentTownConfig, initialTownData);
+
+    // Wire up Town Switcher UI component
+    initTownSwitcher(switchTown);
 
     // 4. State Management
 
@@ -488,7 +822,7 @@ async function init() {
 
     
 
-    const workspaceManager = new WorkspaceManager(
+    workspaceManager = new WorkspaceManager(
 
         workspaceElements,
 
@@ -2630,19 +2964,7 @@ async function init() {
 
     // In-Scene Floating Landmark Labels
 
-    const worldLabels = [
-
-        { el: document.getElementById('label-gashouse'), lon: -7.6930, lat: 52.3528, yOffset: 25 },
-
-        { el: document.getElementById('label-suir-island'), lon: -7.7042, lat: 52.3520, yOffset: 25 },
-
-        { el: document.getElementById('label-the-quay'), lon: -7.7032, lat: 52.3538, yOffset: 25 },
-
-        { el: document.getElementById('label-old-bridge'), lon: -7.7041, lat: 52.3514, yOffset: 25 },
-
-        { el: document.getElementById('label-sarsfield'), lon: -7.7050, lat: 52.3558, yOffset: 30 }
-
-    ];
+    // worldLabels is dynamically configured by updateWorldLabelsForTown(currentTownConfig)
 
     
 
@@ -3044,7 +3366,7 @@ async function init() {
 
         // Simulation Sub-stepping
 
-        if (isPlaying) {
+        if (isPlaying && simulator) {
 
             const speedMultiplier = playbackSpeed / 20.0;
 
@@ -3098,9 +3420,13 @@ async function init() {
 
         // Animated water shader uniforms
 
-        waterMaterial.uniforms.u_time.value = now * 0.001;
+        if (waterMaterial && waterMaterial.uniforms && simulator) {
 
-        waterMaterial.uniforms.u_waterTex.value = simulator.getWaterTexture();
+            waterMaterial.uniforms.u_time.value = now * 0.001;
+
+            waterMaterial.uniforms.u_waterTex.value = simulator.getWaterTexture();
+
+        }
 
         
 
@@ -3135,5 +3461,9 @@ async function init() {
 
 }
 
-window.addEventListener('DOMContentLoaded', init);
+if (typeof window !== 'undefined') {
+    window.addEventListener('DOMContentLoaded', init);
+}
+
+export { init };
 
