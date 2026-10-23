@@ -35,6 +35,12 @@ import { createAnalyticalOverlays } from './rendering/analytical_overlays.js';
 import { WorkspaceManager } from './ui/workspaces.js';
 import { TOWNS, getTownConfig, DEFAULT_TOWN_ID } from './config/towns.js';
 import { initTownSwitcher, getActiveTown, setActiveTown } from './ui/town_switcher.js';
+import {
+    DIBRUGARH_SCENARIOS,
+    applyDibrugarhScenario,
+    getDibrugarhGaugeStatus,
+    DIBRUGARH_SLIDER_LIMITS
+} from './simulation/dibrugarh_scenarios.js';
 
 /**
  * Loads GIS and raster assets dynamically for a given town configuration.
@@ -112,6 +118,15 @@ async function init() {
     const initialTownId = typeof getActiveTown === 'function' ? getActiveTown() : DEFAULT_TOWN_ID;
     let currentTownConfig = getTownConfig(initialTownId);
     console.log(`Initializing Hydroverse (${currentTownConfig.name}, ${currentTownConfig.riverName})...`);
+
+    // Early DOM bindings for scenario and sliders
+    let activeScenarioTag = typeof document !== 'undefined' ? document.getElementById('active-scenario-tag') : null;
+    let sliderInflow = typeof document !== 'undefined' ? document.getElementById('slider-inflow') : null;
+    let valInflow = typeof document !== 'undefined' ? document.getElementById('val-inflow') : null;
+    let sliderRain = typeof document !== 'undefined' ? document.getElementById('slider-rain') : null;
+    let valRain = typeof document !== 'undefined' ? document.getElementById('val-rain') : null;
+    let sliderSurge = typeof document !== 'undefined' ? document.getElementById('slider-surge') : null;
+    let valSurge = typeof document !== 'undefined' ? document.getElementById('val-surge') : null;
 
     // 1. Setup Three.js Scene, Renderer, Camera, Lighting
     const canvas = document.getElementById('three-canvas');
@@ -449,7 +464,11 @@ async function init() {
 
         // 13. Reapply scenario
         if (typeof applyScenario === 'function') {
-            applyScenario('flood100');
+            if (townConfig.id === 'dibrugarh') {
+                applyScenario('baseline-monsoon');
+            } else {
+                applyScenario('flood100');
+            }
         }
     }
 
@@ -492,31 +511,42 @@ async function init() {
 
         const stationTitle = document.querySelector('.station-title');
         if (stationTitle) {
-            stationTitle.textContent = `${cfg.gauge.name} (${cfg.riverName})`;
+            stationTitle.textContent = cfg.id === 'dibrugarh'
+                ? 'WRD Station 03 (Brahmaputra River)'
+                : `${cfg.gauge.name} (${cfg.riverName})`;
         }
 
         const readoutItems = document.querySelectorAll('.station-card .station-readout-item');
         if (readoutItems && readoutItems.length >= 3) {
+            const stageLbl = readoutItems[0]?.querySelector('.st-lbl');
             const stageVal = readoutItems[0]?.querySelector('.st-val');
             const bankfullLbl = readoutItems[1]?.querySelector('.st-lbl');
             const bankfullVal = readoutItems[1]?.querySelector('.st-val');
+            const dischargeLbl = readoutItems[2]?.querySelector('.st-lbl');
             const dischargeVal = readoutItems[2]?.querySelector('.st-val');
+            const alertStatusLbl = readoutItems[3]?.querySelector('.st-lbl');
             const alertStatusVal = readoutItems[3]?.querySelector('.st-val');
 
             if (cfg.id === 'dibrugarh') {
+                if (stageLbl) stageLbl.textContent = 'Stage Level:';
                 if (stageVal) stageVal.textContent = '104.50 m MSL';
                 if (bankfullLbl) bankfullLbl.textContent = 'Danger Level:';
                 if (bankfullVal) bankfullVal.textContent = '105.70 m MSL';
-                if (dischargeVal) dischargeVal.textContent = '24,500 m³/s';
+                if (dischargeLbl) dischargeLbl.textContent = 'HFL (1998):';
+                if (dischargeVal) dischargeVal.textContent = '106.48 m MSL';
+                if (alertStatusLbl) alertStatusLbl.textContent = 'Alert Status:';
                 if (alertStatusVal) {
-                    alertStatusVal.textContent = 'MONSOON STAGE';
-                    alertStatusVal.style.color = '#38bdf8';
+                    alertStatusVal.textContent = 'NORMAL FLOW';
+                    alertStatusVal.style.color = '#34d399';
                 }
             } else {
+                if (stageLbl) stageLbl.textContent = 'Stage Level:';
                 if (stageVal) stageVal.textContent = '2.38 m OD';
                 if (bankfullLbl) bankfullLbl.textContent = 'Bankfull Level:';
                 if (bankfullVal) bankfullVal.textContent = '2.80 m OD';
+                if (dischargeLbl) dischargeLbl.textContent = 'River Discharge:';
                 if (dischargeVal) dischargeVal.textContent = '142 m³/s';
+                if (alertStatusLbl) alertStatusLbl.textContent = 'Alert Status:';
                 if (alertStatusVal) {
                     alertStatusVal.textContent = 'NORMAL FLOW';
                     alertStatusVal.style.color = '#34d399';
@@ -525,9 +555,63 @@ async function init() {
         }
 
         const inflowLabel = document.querySelector('.slider-field .slider-labels span:first-child');
-        if (inflowLabel) {
-            inflowLabel.textContent = `${cfg.riverName} Inflow`;
+        const sInflow = sliderInflow || document.getElementById('slider-inflow');
+        const vInflow = valInflow || document.getElementById('val-inflow');
+        const sRain = sliderRain || document.getElementById('slider-rain');
+        const vRain = valRain || document.getElementById('val-rain');
+        const sSurge = sliderSurge || document.getElementById('slider-surge');
+        const vSurge = valSurge || document.getElementById('val-surge');
+
+        if (cfg.id === 'dibrugarh') {
+            if (inflowLabel) inflowLabel.textContent = 'River Stage';
+            if (sInflow) {
+                sInflow.min = `${DIBRUGARH_SLIDER_LIMITS.stageMin}`;
+                sInflow.max = `${DIBRUGARH_SLIDER_LIMITS.stageMax}`;
+                sInflow.step = `${DIBRUGARH_SLIDER_LIMITS.stageStep}`;
+                sInflow.value = '104.50';
+            }
+            if (vInflow) vInflow.textContent = '104.50 m MSL';
+            if (sRain) {
+                sRain.min = `${DIBRUGARH_SLIDER_LIMITS.rainMin}`;
+                sRain.max = `${DIBRUGARH_SLIDER_LIMITS.rainMax}`;
+                sRain.step = `${DIBRUGARH_SLIDER_LIMITS.rainStep}`;
+                sRain.value = '0';
+            }
+            if (vRain) vRain.textContent = '0 mm/h';
+            if (sSurge) {
+                sSurge.min = '-0.5';
+                sSurge.max = '3.0';
+                sSurge.step = '0.05';
+                sSurge.value = '0.00';
+            }
+            if (vSurge) vSurge.textContent = '+0.00 m';
+        } else {
+            if (inflowLabel) inflowLabel.textContent = `${cfg.riverName} Inflow`;
+            if (sInflow) {
+                sInflow.min = '20';
+                sInflow.max = '650';
+                sInflow.step = '10';
+                sInflow.value = '450';
+            }
+            if (vInflow) vInflow.textContent = '450 m³/s';
+            if (sRain) {
+                sRain.min = '0';
+                sRain.max = '80';
+                sRain.step = '5';
+                sRain.value = '0';
+            }
+            if (vRain) vRain.textContent = '0 mm/h';
+            if (sSurge) {
+                sSurge.min = '-0.5';
+                sSurge.max = '3.0';
+                sSurge.step = '0.05';
+                sSurge.value = '0.00';
+            }
+            if (vSurge) vSurge.textContent = '+0.00 m';
         }
+
+        // Dynamically swap scenario buttons for the town
+        updateScenarioButtonsForTown(cfg);
 
         const roadsList = document.getElementById('roads-list');
         if (roadsList) {
@@ -563,6 +647,84 @@ async function init() {
                 `;
             }
         }
+    }
+
+    function updateScenarioButtonsForTown(cfg) {
+        if (typeof document === 'undefined') return;
+
+        const scenarioContainer = document.getElementById('scenario-selector') ||
+            document.getElementById('live-scenarios') ||
+            document.querySelector('#scenario-controls-view .scenario-buttons-stack') ||
+            document.querySelector('.scenario-buttons-stack');
+
+        if (!scenarioContainer) return;
+        if (!scenarioContainer.id) {
+            scenarioContainer.id = 'scenario-selector';
+        }
+
+        const tagEl = activeScenarioTag || document.getElementById('active-scenario-tag');
+
+        if (cfg.id === 'dibrugarh') {
+            scenarioContainer.innerHTML = `
+                <button class="scenario-btn active" data-scenario="baseline-monsoon">
+                    <div class="s-dot blue"></div>
+                    <div class="s-info">
+                        <span class="s-name">Normal Monsoon Flow</span>
+                        <span class="s-val">104.50 m MSL • Channel baseline</span>
+                    </div>
+                </button>
+                <button class="scenario-btn" data-scenario="july-2024-flash">
+                    <div class="s-dot amber"></div>
+                    <div class="s-info">
+                        <span class="s-name">July 2024 Urban Flash Flood</span>
+                        <span class="s-val">65 mm/h rain • 105.50 m stage</span>
+                    </div>
+                </button>
+                <button class="scenario-btn" data-scenario="sept-1998-record">
+                    <div class="s-dot red"></div>
+                    <div class="s-info">
+                        <span class="s-name">Sept 1998 Historic River Flood</span>
+                        <span class="s-val">106.48 m HFL • Overtopping DTP dyke</span>
+                    </div>
+                </button>
+            `;
+            if (tagEl) {
+                tagEl.textContent = 'Normal Monsoon Flow';
+            }
+        } else {
+            scenarioContainer.innerHTML = `
+                <button class="scenario-btn" data-scenario="normal">
+                    <div class="s-dot blue"></div>
+                    <div class="s-info">
+                        <span class="s-name">Normal River Flow</span>
+                        <span class="s-val">55 m³/s • Channel baseline</span>
+                    </div>
+                </button>
+                <button class="scenario-btn active" data-scenario="flood100">
+                    <div class="s-dot red"></div>
+                    <div class="s-info">
+                        <span class="s-name">1-in-100-Yr Flood</span>
+                        <span class="s-val">450 m³/s • Overtopping quays</span>
+                    </div>
+                </button>
+                <button class="scenario-btn" data-scenario="surge">
+                    <div class="s-dot amber"></div>
+                    <div class="s-info">
+                        <span class="s-name">Storm Surge & Rain</span>
+                        <span class="s-val">400 m³/s + 50 mm/h rain</span>
+                    </div>
+                </button>
+            `;
+            if (tagEl) {
+                tagEl.textContent = '1-in-100-Yr Flood';
+            }
+        }
+
+        scenarioContainer.querySelectorAll('.scenario-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                applyScenario(btn.dataset.scenario);
+            });
+        });
     }
 
     function updateWorldLabelsForTown(cfg) {
@@ -885,20 +1047,13 @@ async function init() {
     
 
     // Scenario Controls
-
-    const activeScenarioTag = document.getElementById('active-scenario-tag');
-
-    const sliderInflow = document.getElementById('slider-inflow');
-
-    const valInflow = document.getElementById('val-inflow');
-
-    const sliderRain = document.getElementById('slider-rain');
-
-    const valRain = document.getElementById('val-rain');
-
-    const sliderSurge = document.getElementById('slider-surge');
-
-    const valSurge = document.getElementById('val-surge');
+    activeScenarioTag = document.getElementById('active-scenario-tag');
+    sliderInflow = document.getElementById('slider-inflow');
+    valInflow = document.getElementById('val-inflow');
+    sliderRain = document.getElementById('slider-rain');
+    valRain = document.getElementById('val-rain');
+    sliderSurge = document.getElementById('slider-surge');
+    valSurge = document.getElementById('val-surge');
 
     
 
@@ -1894,117 +2049,154 @@ async function init() {
     
 
     // Scenario Selection
-
     function applyScenario(type) {
-
         currentScenario = type;
 
-        document.querySelectorAll('.scenario-btn').forEach(btn => {
-
+        const allBtns = document.querySelectorAll('.scenario-btn');
+        allBtns.forEach(btn => {
             btn.classList.toggle('active', btn.dataset.scenario === type);
-
         });
 
-        
+        const sInflow = sliderInflow || document.getElementById('slider-inflow');
+        const vInflow = valInflow || document.getElementById('val-inflow');
+        const sRain = sliderRain || document.getElementById('slider-rain');
+        const vRain = valRain || document.getElementById('val-rain');
+        const sSurge = sliderSurge || document.getElementById('slider-surge');
+        const vSurge = valSurge || document.getElementById('val-surge');
+        const tagEl = activeScenarioTag || document.getElementById('active-scenario-tag');
 
-        if (type === 'normal') {
+        if (currentTownConfig && currentTownConfig.id === 'dibrugarh') {
+            let dibType = type;
+            if (type === 'normal' || type === 'flood100') {
+                dibType = 'baseline-monsoon';
+            } else if (type === 'surge') {
+                dibType = 'july-2024-flash';
+            }
 
-            sliderInflow.value = 55;
+            const sc = DIBRUGARH_SCENARIOS[dibType] || DIBRUGARH_SCENARIOS['baseline-monsoon'];
+            currentScenario = sc.id;
 
-            sliderRain.value = 0;
+            allBtns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.scenario === sc.id);
+            });
 
-            sliderSurge.value = 0.00;
+            const hudState = {
+                sliderInflow: sInflow,
+                valInflow: vInflow,
+                sliderRain: sRain,
+                valRain: vRain,
+                sliderSurge: sSurge,
+                valSurge: vSurge,
+                activeScenarioTag: tagEl
+            };
 
-            activeScenarioTag.textContent = 'Normal Flow';
+            applyDibrugarhScenario(sc.id, simulator, hudState);
+            applyDibrugarhScenario(sc.id, baselineSimulator);
 
-        } else if (type === 'flood100') {
-
-            sliderInflow.value = 450;
-
-            sliderRain.value = 0;
-
-            sliderSurge.value = 0.00;
-
-            activeScenarioTag.textContent = '1-in-100-Yr Flood';
-
-        } else if (type === 'surge') {
-
-            sliderInflow.value = 400;
-
-            sliderRain.value = 50;
-
-            sliderSurge.value = 1.80;
-
-            activeScenarioTag.textContent = 'Surge & Rain';
-
+            updateSliderParams();
+            if (simulator && typeof simulator.reset === 'function') simulator.reset();
+            if (baselineSimulator && typeof baselineSimulator.reset === 'function') baselineSimulator.reset();
+            if (typeof updateBarrierUI === 'function') updateBarrierUI();
+            return;
         }
 
-        
+        if (type === 'normal') {
+            if (sInflow) sInflow.value = 55;
+            if (sRain) sRain.value = 0;
+            if (sSurge) sSurge.value = 0.00;
+            if (tagEl) tagEl.textContent = 'Normal Flow';
+        } else if (type === 'flood100') {
+            if (sInflow) sInflow.value = 450;
+            if (sRain) sRain.value = 0;
+            if (sSurge) sSurge.value = 0.00;
+            if (tagEl) tagEl.textContent = '1-in-100-Yr Flood';
+        } else if (type === 'surge') {
+            if (sInflow) sInflow.value = 400;
+            if (sRain) sRain.value = 50;
+            if (sSurge) sSurge.value = 1.80;
+            if (tagEl) tagEl.textContent = 'Surge & Rain';
+        }
 
         updateSliderParams();
-
-        simulator.reset();
-
-        baselineSimulator.reset();
-
+        if (simulator && typeof simulator.reset === 'function') simulator.reset();
+        if (baselineSimulator && typeof baselineSimulator.reset === 'function') baselineSimulator.reset();
         // Keep user barriers intact without injecting presets
-
         // Only explicit preset selection should load presets
-
-        updateBarrierUI();
-
+        if (typeof updateBarrierUI === 'function') updateBarrierUI();
     }
-
-    
 
     function updateSliderParams() {
+        const sInflow = sliderInflow || document.getElementById('slider-inflow');
+        const vInflow = valInflow || document.getElementById('val-inflow');
+        const sRain = sliderRain || document.getElementById('slider-rain');
+        const vRain = valRain || document.getElementById('val-rain');
+        const sSurge = sliderSurge || document.getElementById('slider-surge');
+        const vSurge = valSurge || document.getElementById('val-surge');
 
-        const inflow = parseFloat(sliderInflow.value);
+        const rawInflow = sInflow ? parseFloat(sInflow.value) : 450;
+        const rain = sRain ? parseFloat(sRain.value) : 0;
+        const surge = sSurge ? parseFloat(sSurge.value) : 0;
 
-        const rain = parseFloat(sliderRain.value);
+        if (currentTownConfig && currentTownConfig.id === 'dibrugarh') {
+            const stage = rawInflow;
+            if (vInflow) vInflow.textContent = `${stage.toFixed(2)} m MSL`;
+            if (vRain) vRain.textContent = `${rain} mm/h`;
+            if (vSurge) vSurge.textContent = `${surge >= 0 ? '+' : ''}${surge.toFixed(2)} m`;
 
-        const surge = parseFloat(sliderSurge.value);
+            const stageVal = document.querySelector('.station-card .station-readout-item:first-child .st-val');
+            if (stageVal) stageVal.textContent = `${stage.toFixed(2)} m MSL`;
 
-        
+            const alertStatusVal = document.querySelector('.station-card .station-readout-item:nth-child(4) .st-val');
+            if (alertStatusVal) {
+                const status = getDibrugarhGaugeStatus(stage);
+                alertStatusVal.textContent = status;
+                alertStatusVal.style.color = (status === 'HISTORIC PEAK OVERTOPPING' || status === 'DANGER LEVEL EXCEEDED')
+                    ? '#f87171' : (status === 'HIGH FLOW' ? '#fbbf24' : '#34d399');
+            }
 
-        valInflow.textContent = `${inflow} m³/s`;
+            const approxInflow = Math.round(24500 + (stage - 104.5) * 15000);
+            const riverInflow = Math.max(10000, approxInflow);
 
-        valRain.textContent = `${rain} mm/h`;
+            if (simulator && simulator.params) {
+                simulator.params.riverInflow = riverInflow;
+                simulator.params.rainRate = rain;
+                simulator.params.rainIntensity = rain;
+                simulator.params.downstreamSurge = surge;
+                simulator.params.stageMSL = stage;
+            }
+            if (baselineSimulator && baselineSimulator.params) {
+                baselineSimulator.params.riverInflow = riverInflow;
+                baselineSimulator.params.rainRate = rain;
+                baselineSimulator.params.rainIntensity = rain;
+                baselineSimulator.params.downstreamSurge = surge;
+                baselineSimulator.params.stageMSL = stage;
+            }
+        } else {
+            if (vInflow) vInflow.textContent = `${rawInflow} m³/s`;
+            if (vRain) vRain.textContent = `${rain} mm/h`;
+            if (vSurge) vSurge.textContent = `${surge >= 0 ? '+' : ''}${surge.toFixed(2)} m`;
 
-        valSurge.textContent = `${surge >= 0 ? '+' : ''}${surge.toFixed(2)} m`;
-
-        
-
-        simulator.params.riverInflow = inflow;
-
-        simulator.params.rainRate = rain;
-
-        simulator.params.downstreamSurge = surge;
-
-        
-
-        baselineSimulator.params.riverInflow = inflow;
-
-        baselineSimulator.params.rainRate = rain;
-
-        baselineSimulator.params.downstreamSurge = surge;
-
+            if (simulator && simulator.params) {
+                simulator.params.riverInflow = rawInflow;
+                simulator.params.rainRate = rain;
+                simulator.params.rainIntensity = rain;
+                simulator.params.downstreamSurge = surge;
+            }
+            if (baselineSimulator && baselineSimulator.params) {
+                baselineSimulator.params.riverInflow = rawInflow;
+                baselineSimulator.params.rainRate = rain;
+                baselineSimulator.params.rainIntensity = rain;
+                baselineSimulator.params.downstreamSurge = surge;
+            }
+        }
     }
 
-    
-
-    sliderInflow.addEventListener('input', updateSliderParams);
-
-    sliderRain.addEventListener('input', updateSliderParams);
-
-    sliderSurge.addEventListener('input', updateSliderParams);
-
-    
+    if (sliderInflow) sliderInflow.addEventListener('input', updateSliderParams);
+    if (sliderRain) sliderRain.addEventListener('input', updateSliderParams);
+    if (sliderSurge) sliderSurge.addEventListener('input', updateSliderParams);
 
     document.querySelectorAll('.scenario-btn').forEach(b => {
-
         b.addEventListener('click', () => applyScenario(b.dataset.scenario));
-
     });
 
     
@@ -3447,9 +3639,12 @@ async function init() {
 
     
 
-    // Start with 1-in-100-year flood
-
-    applyScenario('flood100');
+    // Start initial scenario
+    if (currentTownConfig && currentTownConfig.id === 'dibrugarh') {
+        applyScenario('baseline-monsoon');
+    } else {
+        applyScenario('flood100');
+    }
 
     
 
@@ -3465,5 +3660,9 @@ if (typeof window !== 'undefined') {
     window.addEventListener('DOMContentLoaded', init);
 }
 
-export { init };
+export {
+    init,
+    applyDibrugarhScenario,
+    DIBRUGARH_SCENARIOS
+};
 
