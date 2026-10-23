@@ -17,6 +17,7 @@ import { CommunityEvidenceManager } from '../evidence/community_evidence.js';
 import { EmergencyCommandExerciseManager } from '../exercise/command_exercise.js';
 import { ForecastManager } from '../forecasting/forecast_manager.js';
 import { DefencePerformanceManager } from '../defences/defence_manager.js';
+import { ExplainabilityManager } from '../explainability/explainability_manager.js';
 
 export class WorkspaceManager {
     constructor(elements, simulator, baselineSimulator, roadGraph, interventionEngine, validationMetrics, overlays, barriersManager, scene, meta, elevArray) {
@@ -49,6 +50,10 @@ export class WorkspaceManager {
         this.defenceManager.onUpdate(() => this.updateDefenceUI());
         this.defenceManager.loadDefenceDataset();
         
+        // Explainable Flood Forecast Manager
+        this.explainabilityManager = new ExplainabilityManager(meta, elevArray, this.forecastManager);
+        this.explainabilityManager.onUpdate(() => this.updateExplainableUI());
+        
         // Active Filter States
         this.evidenceActiveFilter = 'all';
         
@@ -59,6 +64,7 @@ export class WorkspaceManager {
     initEventListeners() {
         this.initForecastControls();
         this.initDefenceControls();
+        this.initExplainableControls();
         const { tabs, overlayToggles, scenarioBtns, historicalBtns, interventionControls, storyControls } = this.elements;
         
         // 1. Top Workspace Tabs
@@ -316,6 +322,11 @@ export class WorkspaceManager {
             this.infraManager.setVisible(false);
             this.evidenceManager.setVisible(false);
             this.updateDefenceUI();
+        } else if (ws === 'explainable') {
+            this.infraManager.setVisible(false);
+            this.evidenceManager.setVisible(false);
+            if (this.defenceManager) this.defenceManager.setVisible(false);
+            this.updateExplainableUI();
         }
         
         if (this.defenceManager) {
@@ -1608,4 +1619,231 @@ export class WorkspaceManager {
             }
         }
     }
+
+    initExplainableControls() {
+        // Evidence filter chips
+        const chips = document.querySelectorAll('.exp-ev-chip');
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                chips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                if (this.explainabilityManager) {
+                    this.explainabilityManager.setEvidenceFilter(chip.dataset.evfilter);
+                }
+            });
+        });
+
+        // Sensitivity experiment buttons
+        const btnRainUp = document.getElementById('btn-sens-rain-up');
+        if (btnRainUp) {
+            btnRainUp.addEventListener('click', () => {
+                this.explainabilityManager.runSensitivityExperiment({
+                    variable: 'precipitation',
+                    factor: 1.20
+                });
+            });
+        }
+
+        const btnRainDown = document.getElementById('btn-sens-rain-down');
+        if (btnRainDown) {
+            btnRainDown.addEventListener('click', () => {
+                this.explainabilityManager.runSensitivityExperiment({
+                    variable: 'precipitation',
+                    factor: 0.80
+                });
+            });
+        }
+
+        const btnStageUp = document.getElementById('btn-sens-stage-up');
+        if (btnStageUp) {
+            btnStageUp.addEventListener('click', () => {
+                this.explainabilityManager.runSensitivityExperiment({
+                    variable: 'upstream_stage',
+                    offset: 0.30
+                });
+            });
+        }
+
+        const btnSoilSat = document.getElementById('btn-sens-soil-sat');
+        if (btnSoilSat) {
+            btnSoilSat.addEventListener('click', () => {
+                this.explainabilityManager.runSensitivityExperiment({
+                    variable: 'runoff_coefficient',
+                    factor: 1.25
+                });
+            });
+        }
+
+        const btnSensReset = document.getElementById('btn-sens-reset');
+        if (btnSensReset) {
+            btnSensReset.addEventListener('click', () => {
+                this.explainabilityManager.clearSensitivityExperiment();
+            });
+        }
+    }
+
+    updateExplainableUI() {
+        if (!this.explainabilityManager) return;
+        const em = this.explainabilityManager;
+        const fc = this.forecastManager?.forecastPackage;
+
+        // Ensure spatial explanation is updated with simulator without recursive notify loop
+        em.updateSpatialExplanation(this.simulator);
+
+        // 1. Run Badge & KPI Scorecard
+        const elRunBadge = document.getElementById('exp-run-badge');
+        if (elRunBadge && em.currentSnapshot) {
+            elRunBadge.textContent = `RUN: ${em.currentSnapshot.runId}`;
+        }
+
+        if (fc && fc.peak) {
+            const elPeakStage = document.getElementById('exp-kpi-peak-stage');
+            const elPeakQ = document.getElementById('exp-kpi-peak-q');
+            const elTiming = document.getElementById('exp-kpi-timing');
+            const elRisk = document.getElementById('exp-kpi-risk');
+
+            if (elPeakStage) elPeakStage.textContent = `${fc.peak.stage.toFixed(2)} m OD`;
+            if (elPeakQ) elPeakQ.textContent = `${fc.peak.discharge.toFixed(1)} m³/s`;
+            if (elTiming) elTiming.textContent = `+${fc.peak.leadTimeHours}h`;
+            if (elRisk) {
+                elRisk.textContent = fc.peak.riskTier;
+                elRisk.className = fc.peak.riskTier === 'EMERGENCY' ? 'def-kpi-val text-danger' : fc.peak.riskTier === 'WARNING' ? 'def-kpi-val text-amber' : 'def-kpi-val text-success';
+            }
+        }
+
+        // 2. Physical Inflow Decomposition
+        const decomp = em.getDischargeBreakdown();
+        if (decomp) {
+            const elLeadLbl = document.getElementById('exp-decomp-lead-label');
+            if (elLeadLbl) elLeadLbl.textContent = `LEAD: ${decomp.timeLabel} (${decomp.totalQ} m³/s)`;
+
+            const elBarBase = document.getElementById('decomp-bar-base');
+            const elBarWave = document.getElementById('decomp-bar-wave');
+            const elBarRunoff = document.getElementById('decomp-bar-runoff');
+
+            if (elBarBase) elBarBase.style.width = `${decomp.shares.baseflowPct}%`;
+            if (elBarWave) elBarWave.style.width = `${decomp.shares.upstreamWavePct}%`;
+            if (elBarRunoff) elBarRunoff.style.width = `${decomp.shares.runoffPct}%`;
+
+            const elValBase = document.getElementById('decomp-val-base');
+            const elValWave = document.getElementById('decomp-val-wave');
+            const elValRunoff = document.getElementById('decomp-val-runoff');
+
+            if (elValBase) elValBase.textContent = `${decomp.baseflowQ} m³/s (${decomp.shares.baseflowPct}%)`;
+            if (elValWave) elValWave.textContent = `${decomp.upstreamWaveQ} m³/s (${decomp.shares.upstreamWavePct}%)`;
+            if (elValRunoff) elValRunoff.textContent = `${decomp.runoffQ} m³/s (${decomp.shares.runoffPct}%)`;
+        }
+
+        // 3. Deterministic 5-Section Narrative Stack
+        const narrative = em.getNarrative();
+        const narrContainer = document.getElementById('exp-narrative-sections');
+        if (narrContainer && narrative?.sections) {
+            narrContainer.innerHTML = narrative.sections.map(sec => `
+                <div class="exp-narrative-card">
+                    <div class="exp-narr-header">
+                        <span>ℹ️</span>
+                        <span>${sec.title}</span>
+                    </div>
+                    <div class="exp-narr-body">
+                        ${formatMarkdownText(sec.content)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 4. Run-to-Run Diff & Attribution Analysis
+        const diff = em.diffResult;
+        if (diff && diff.isComparable) {
+            const d = diff.deltas;
+            const elDiffStage = document.getElementById('exp-diff-delta-stage');
+            const elDiffQ = document.getElementById('exp-diff-delta-q');
+            const elDiffKl = document.getElementById('exp-diff-delta-kl');
+            const elDiffRain = document.getElementById('exp-diff-delta-rain');
+            const elAttrText = document.getElementById('exp-attribution-text');
+
+            if (elDiffStage) {
+                elDiffStage.textContent = `${d.peakStageM >= 0 ? '+' : ''}${d.peakStageM.toFixed(2)} m`;
+                elDiffStage.className = d.peakStageM > 0.05 ? 'st-val text-amber' : d.peakStageM < -0.05 ? 'st-val text-success' : 'st-val';
+            }
+            if (elDiffQ) elDiffQ.textContent = `${d.peakQM3S >= 0 ? '+' : ''}${d.peakQM3S.toFixed(1)} m³/s`;
+            if (elDiffKl) elDiffKl.textContent = `${d.upstreamKnockloftyM >= 0 ? '+' : ''}${d.upstreamKnockloftyM.toFixed(2)} m`;
+            if (elDiffRain) elDiffRain.textContent = `${d.cumulativePrecipMm >= 0 ? '+' : ''}${d.cumulativePrecipMm.toFixed(1)} mm`;
+            if (elAttrText) elAttrText.textContent = diff.attributionNarrative;
+        }
+
+        // 5. Location-Specific Spatial Explanation
+        const loc = em.selectedLocationExplanation;
+        if (loc && loc.isAvailable) {
+            const elLocName = document.getElementById('exp-loc-name');
+            const elLocBadge = document.getElementById('exp-loc-mechanism-badge');
+            const elLocDepth = document.getElementById('exp-loc-depth');
+            const elLocPeakDepth = document.getElementById('exp-loc-peak-depth');
+            const elLocGround = document.getElementById('exp-loc-ground-elev');
+            const elLocWater = document.getElementById('exp-loc-water-elev');
+            const elLocDesc = document.getElementById('exp-loc-mechanism-desc');
+
+            if (elLocName) elLocName.textContent = loc.locationName;
+            if (elLocBadge) {
+                elLocBadge.textContent = loc.inundationStatus.title;
+                elLocBadge.className = loc.inundationStatus.mechanism === 'DIRECT_OVERTOPPING' ? 'status-pill-red' : loc.inundationStatus.mechanism === 'OVERLAND_FLOW_PATH' ? 'status-pill-amber' : 'status-pill-green';
+            }
+            if (elLocDepth) elLocDepth.textContent = `${loc.elevations.depthM.toFixed(2)} m`;
+            if (elLocPeakDepth) elLocPeakDepth.textContent = `${loc.elevations.peakDepthM.toFixed(2)} m`;
+            if (elLocGround) elLocGround.textContent = `${loc.elevations.groundElevOD.toFixed(2)} m OD`;
+            if (elLocWater) elLocWater.textContent = `${loc.elevations.waterElevOD.toFixed(2)} m OD`;
+            if (elLocDesc) elLocDesc.textContent = loc.inundationStatus.description;
+        }
+
+        // 6. Sensitivity Explorer Results
+        const exp = em.sensitivityExplorer.activeExperiment;
+        const sensBox = document.getElementById('exp-sens-results-box');
+        if (sensBox) {
+            if (exp && exp.isSuccess) {
+                sensBox.classList.remove('hidden');
+                const elTitle = document.getElementById('exp-sens-title');
+                const elBadge = document.getElementById('exp-sens-delta-badge');
+                const elConc = document.getElementById('exp-sens-conclusion');
+
+                if (elTitle) elTitle.textContent = exp.variableLabel;
+                if (elBadge) {
+                    const dS = exp.results.deltaPeakStageM;
+                    elBadge.textContent = `${dS >= 0 ? '+' : ''}${dS.toFixed(2)}m Peak Stage (${exp.results.deltaPeakQM3S >= 0 ? '+' : ''}${exp.results.deltaPeakQM3S} m³/s)`;
+                }
+                if (elConc) elConc.textContent = exp.scientificConclusion;
+            } else {
+                sensBox.classList.add('hidden');
+            }
+        }
+
+        // 7. Structured Evidence Inventory List
+        const evListEl = document.getElementById('exp-evidence-scroll-list');
+        if (evListEl) {
+            const allEv = em.getEvidenceList();
+            const filter = em.activeEvidenceFilter;
+            const filtered = filter === 'all' ? allEv : allEv.filter(e => e.evidenceType === filter);
+
+            evListEl.innerHTML = filtered.map(item => `
+                <div class="def-asset-row-item">
+                    <div class="def-item-left">
+                        <span class="def-item-icon">${item.evidenceType === 'observed_gauge' ? '🌊' : item.evidenceType === 'forecast_precipitation' ? '🌧️' : '📐'}</span>
+                        <div class="def-item-meta">
+                            <span class="def-item-title">${item.name}</span>
+                            <span class="def-item-sub">${item.source} • ${item.relevance}</span>
+                        </div>
+                    </div>
+                    <div class="def-item-right">
+                        <span class="${item.qualityStatus.cssClass}">${item.qualityStatus.label}</span>
+                        <span class="def-item-crest">${item.value} ${item.unit}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+    }
+}
+
+function formatMarkdownText(text) {
+    if (!text) return '';
+    return text
+        .split('**').map((part, i) => i % 2 === 1 ? `<strong>${part}</strong>` : part).join('')
+        .split('*').map((part, i) => i % 2 === 1 ? `<em>${part}</em>` : part).join('');
 }

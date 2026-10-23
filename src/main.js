@@ -189,6 +189,7 @@ async function init() {
     const tabScience = document.getElementById('tab-science');
     const tabForecast = document.getElementById('tab-forecast');
     const tabDefences = document.getElementById('tab-defences');
+    const tabExplainable = document.getElementById('tab-explainable');
     
     const scenarioControlsView = document.getElementById('scenario-controls-view');
     const timeMachineView = document.getElementById('time-machine-view');
@@ -199,6 +200,7 @@ async function init() {
     const scienceValidationView = document.getElementById('science-validation-view');
     const forecastOpsView = document.getElementById('forecast-ops-view');
     const defenceMonitorView = document.getElementById('defence-monitor-view');
+    const explainableForecastView = document.getElementById('explainable-forecast-view');
     const sideBySideOverlay = document.getElementById('side-by-side-overlay');
     
     // Workspace Elements Bundle for WorkspaceManager
@@ -212,7 +214,8 @@ async function init() {
             exercise: tabExercise,
             science: tabScience,
             forecast: tabForecast,
-            defences: tabDefences
+            defences: tabDefences,
+            explainable: tabExplainable
         },
         leftPanels: {
             live: scenarioControlsView,
@@ -223,7 +226,8 @@ async function init() {
             exercise: commandExerciseView,
             science: scienceValidationView,
             forecast: forecastOpsView,
-            defences: defenceMonitorView
+            defences: defenceMonitorView,
+            explainable: explainableForecastView
         },
         overlayToggles: document.querySelectorAll('.overlay-toggle-btn'),
         historicalBtns: document.querySelectorAll('.historical-event-card'),
@@ -257,6 +261,7 @@ async function init() {
     window.workspaceManager = workspaceManager;
     window.forecastManager = workspaceManager.forecastManager;
     window.defenceManager = workspaceManager.defenceManager;
+    window.explainabilityManager = workspaceManager.explainabilityManager;
     
     // Ingest live/cached telemetry and compute real-time forecast cycle
     workspaceManager.forecastManager.executeForecastCycle().catch(err => {
@@ -388,6 +393,10 @@ async function init() {
             if (workspaceManager.defenceManager) {
                 workspaceManager.defenceManager.setVisible(true);
             }
+        } else if (mode === 'explainable') {
+            if (workspaceManager.explainabilityManager) {
+                workspaceManager.updateExplainableUI();
+            }
         }
     }
     
@@ -398,6 +407,7 @@ async function init() {
     if (tabScience) tabScience.addEventListener('click', () => setMode('science'));
     if (tabForecast) tabForecast.addEventListener('click', () => setMode('forecast'));
     if (tabDefences) tabDefences.addEventListener('click', () => setMode('defences'));
+    if (tabExplainable) tabExplainable.addEventListener('click', () => setMode('explainable'));
     
     // Interactive Map Drawing 3D Primitives & Materials
     const drawingGroup = new THREE.Group();
@@ -1424,6 +1434,11 @@ async function init() {
             readoutCoords.textContent = `${hit.lat.toFixed(4)}°N, ${Math.abs(hit.lon).toFixed(4)}°W`;
             const hydroName = document.getElementById('hydrograph-pt-name');
             if (hydroName) hydroName.textContent = hit.street || 'Selected Point';
+
+            // If in Explainable Forecast workspace: explain the selected location
+            if (AppState.currentWorkspace === 'explainable' && workspaceManager.explainabilityManager) {
+                workspaceManager.explainabilityManager.selectLocation(hit.u, hit.v, hit.street, simulator);
+            }
         }
     });
 

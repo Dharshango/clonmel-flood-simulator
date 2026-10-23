@@ -4180,3 +4180,290 @@ input[type="range"]::-webkit-slider-thumb:hover {
     color: #38bdf8;
     font-weight: 700;
 }
+
+
+/* ==========================================================================
+   WORKSPACE 10: EXPLAINABLE FLOOD FORECAST STYLES
+   ========================================================================== */
+
+/* Physical Inflow Decomposition Bar */
+.decomp-bar-track {
+    display: flex;
+    width: 100%;
+    height: 12px;
+    background: rgba(15, 23, 42, 0.7);
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 6px 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.decomp-bar-seg {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.decomp-bar-seg.base {
+    background: linear-gradient(90deg, #38bdf8, #0284c7);
+}
+
+.decomp-bar-seg.wave {
+    background: linear-gradient(90deg, #a855f7, #7e22ce);
+}
+
+.decomp-bar-seg.runoff {
+    background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.decomp-legend-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.decomp-leg-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: #cbd5e1;
+}
+
+.decomp-leg-item .leg-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.decomp-leg-item .leg-dot.base { background: #38bdf8; }
+.decomp-leg-item .leg-dot.wave { background: #a855f7; }
+.decomp-leg-item .leg-dot.runoff { background: #10b981; }
+
+/* 5-Section Deterministic Narrative Stack */
+.exp-narrative-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.exp-narrative-card {
+    background: rgba(15, 23, 42, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.exp-narr-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: #38bdf8;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.exp-narr-body {
+    font-size: 11px;
+    line-height: 1.45;
+    color: #cbd5e1;
+}
+
+.exp-narr-body strong {
+    color: #f1f5f9;
+}
+
+.exp-narr-body em {
+    color: #94a3b8;
+    font-style: italic;
+}
+
+/* Run Comparison & Attribution Box */
+.exp-attribution-box {
+    margin-top: 8px;
+    background: rgba(15, 23, 42, 0.65);
+    border-left: 3px solid #38bdf8;
+    border-radius: 0 6px 6px 0;
+    padding: 8px 10px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: #cbd5e1;
+}
+
+/* Sensitivity Explorer Sandbox */
+.sensitivity-btn-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.btn-sens {
+    background: rgba(30, 41, 59, 0.75);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #f1f5f9;
+    border-radius: 4px;
+    padding: 6px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: center;
+}
+
+.btn-sens:hover {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: #38bdf8;
+}
+
+.btn-sens.reset {
+    grid-column: span 2;
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.35);
+    color: #f87171;
+}
+
+.btn-sens.reset:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: #ef4444;
+}
+
+.exp-sens-results-box {
+    margin-top: 8px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+
+.sens-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    font-size: 11px;
+    color: #f59e0b;
+}
+
+.sens-conclusion-text {
+    font-size: 10.5px;
+    line-height: 1.4;
+    color: #cbd5e1;
+    margin: 0;
+}
+
+/* Quality Control Badges in Evidence Inventory */
+.qc-pill {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.qc-pill.verified {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.qc-pill.provisional {
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.qc-pill.stale {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.qc-pill.missing {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.qc-pill.filtered {
+    background: rgba(168, 85, 247, 0.2);
+    color: #c084fc;
+    border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+/* Scientific Validation Table */
+.exp-val-table-wrap {
+    overflow-x: auto;
+    margin-top: 6px;
+}
+
+.exp-val-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+    color: #cbd5e1;
+}
+
+.exp-val-table th {
+    background: rgba(15, 23, 42, 0.6);
+    color: #94a3b8;
+    padding: 4px 6px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-weight: 600;
+}
+
+.exp-val-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.role-tag {
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 8.5px;
+    font-weight: 700;
+}
+
+.role-tag.val {
+    background: rgba(56, 189, 248, 0.15);
+    color: #38bdf8;
+}
+
+.role-tag.cal {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+}
+
+/* Disclosed Limitations List */
+.exp-limitations-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.exp-limit-item {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: 4px;
+    padding: 6px;
+    font-size: 10px;
+    line-height: 1.35;
+    color: #cbd5e1;
+}
+
+.exp-limit-bullet {
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.exp-limit-content strong {
+    color: #fbbf24;
+}

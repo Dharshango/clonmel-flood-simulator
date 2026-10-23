@@ -129,6 +129,9 @@
                 <button id="tab-defences" class="mode-tab" title="Workspace 9: Flood Defence Performance Monitor">
                     Defence Monitor
                 </button>
+                <button id="tab-explainable" class="mode-tab" title="Workspace 10: Explainable Flood Forecast & Reasoning Architecture">
+                    Explain Forecast
+                </button>
             </nav>
 
             <!-- Right: Quick Actions + FPS Counter Badge -->
@@ -1300,6 +1303,264 @@
                     </div>
                     <div id="defence-assets-scroll-list" class="defence-assets-scroll-list">
                         <!-- Populated dynamically by DefencePerformanceManager -->
+                    </div>
+                </div>
+
+                <!-- Workspace 10: Explainable Flood Forecast -->
+                <div id="explainable-forecast-view" class="hidden">
+                    <div class="panel-header">
+                        <span class="panel-title">EXPLAINABLE FLOOD FORECAST</span>
+                        <span id="exp-run-badge" class="pill-tag cyan">RUN: CLM-FC-ACTIVE</span>
+                    </div>
+
+                    <p class="barrier-guide-hint">
+                        Transparent reasoning and scientific evidence accounting for the active Clonmel flood forecast. Decomposes physical drivers, compares run-to-run changes, and identifies model limitations.
+                    </p>
+
+                    <!-- Important Disclaimer Pill -->
+                    <div class="defence-disclaimer-pill">
+                        <span class="disc-icon">ℹ️</span>
+                        <span>Evidence-backed decision-support layer. Physical numerical model outputs do NOT replace statutory directives from Tipperary County Council or the OPW.</span>
+                    </div>
+
+                    <!-- Summary KPI Scorecard -->
+                    <div class="defence-kpi-row">
+                        <div class="def-kpi-pill cyan">
+                            <span class="def-kpi-val" id="exp-kpi-peak-stage">-- m</span>
+                            <span class="def-kpi-lbl">Predicted Peak Stage</span>
+                        </div>
+                        <div class="def-kpi-pill blue">
+                            <span class="def-kpi-val" id="exp-kpi-peak-q">-- m³/s</span>
+                            <span class="def-kpi-lbl">Peak Inflow (Q)</span>
+                        </div>
+                        <div class="def-kpi-pill purple">
+                            <span class="def-kpi-val" id="exp-kpi-timing">+--h</span>
+                            <span class="def-kpi-lbl">Peak Arrival Time</span>
+                        </div>
+                        <div class="def-kpi-pill orange">
+                            <span class="def-kpi-val" id="exp-kpi-risk">WATCH</span>
+                            <span class="def-kpi-lbl">Forecast Risk Tier</span>
+                        </div>
+                    </div>
+
+                    <!-- 1. Physical Inflow Decomposition Card -->
+                    <div class="hospital-access-card" style="margin-top: 8px;">
+                        <div class="hosp-header">
+                            <span class="hosp-title">WHY IS THE MODEL PREDICTING THIS?</span>
+                            <span class="status-pill-green" id="exp-decomp-lead-label">PEAK AT +14H</span>
+                        </div>
+                        <p class="fc-card-sub" style="margin: 4px 0 8px 0; font-size: 0.76rem; color: #94a3b8;">
+                            Decomposition of volumetric river inflow discharge Q into governing physical components:
+                        </p>
+                        <!-- Segmented progress bar -->
+                        <div class="decomp-bar-track">
+                            <div id="decomp-bar-base" class="decomp-bar-seg base" style="width: 35%;" title="Baseflow Recession"></div>
+                            <div id="decomp-bar-wave" class="decomp-bar-seg wave" style="width: 25%;" title="Upstream Wave Routing"></div>
+                            <div id="decomp-bar-runoff" class="decomp-bar-seg runoff" style="width: 40%;" title="Catchment Runoff"></div>
+                        </div>
+                        <div class="decomp-legend-row">
+                            <div class="decomp-leg-item">
+                                <span class="leg-dot base"></span>
+                                <span class="leg-txt">Baseflow: <strong id="decomp-val-base">-- m³/s (--%)</strong></span>
+                            </div>
+                            <div class="decomp-leg-item">
+                                <span class="leg-dot wave"></span>
+                                <span class="leg-txt">Upstream Wave: <strong id="decomp-val-wave">-- m³/s (--%)</strong></span>
+                            </div>
+                            <div class="decomp-leg-item">
+                                <span class="leg-dot runoff"></span>
+                                <span class="leg-txt">Runoff: <strong id="decomp-val-runoff">-- m³/s (--%)</strong></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Deterministic 5-Section Forecast Narrative Card -->
+                    <div class="hospital-access-card" style="margin-top: 8px;">
+                        <div class="hosp-header">
+                            <span class="hosp-title">EVIDENCE-BASED FORECAST NARRATIVE</span>
+                            <span class="pill-tag success">DETERMINISTIC REASONING</span>
+                        </div>
+                        <div id="exp-narrative-sections" class="exp-narrative-sections">
+                            <!-- Populated dynamically by ForecastNarrativeEngine -->
+                        </div>
+                    </div>
+
+                    <!-- 3. Run-to-Run Diff & Attribution Analysis Card -->
+                    <div class="hospital-access-card" style="margin-top: 8px;">
+                        <div class="hosp-header">
+                            <div class="def-card-title-group">
+                                <span class="def-card-type-tag">FORECAST RUN AUDIT</span>
+                                <h4 class="def-card-name">Run-to-Run Comparison</h4>
+                            </div>
+                            <span class="status-pill-blue" id="exp-diff-status-badge">COMPARED WITH PREVIOUS RUN</span>
+                        </div>
+                        <div class="station-readouts-grid">
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Δ Peak Stage:</span>
+                                <strong class="st-val" id="exp-diff-delta-stage">-- m</strong>
+                            </div>
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Δ Peak Discharge:</span>
+                                <span class="st-val" id="exp-diff-delta-q">-- m³/s</span>
+                            </div>
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Δ Upstream Gauge:</span>
+                                <span class="st-val" id="exp-diff-delta-kl">-- m</span>
+                            </div>
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Δ 48h Rain Forecast:</span>
+                                <span class="st-val" id="exp-diff-delta-rain">-- mm</span>
+                            </div>
+                        </div>
+                        <div class="exp-attribution-box" id="exp-attribution-text">
+                            Loading run comparison...
+                        </div>
+                    </div>
+
+                    <!-- 4. Location-Specific Spatial Explanation Card -->
+                    <div class="hospital-access-card" style="margin-top: 8px;">
+                        <div class="hosp-header">
+                            <div class="def-card-title-group">
+                                <span class="def-card-type-tag">SPATIAL EXPLANATION</span>
+                                <h4 class="def-card-name" id="exp-loc-name">The Quay / Quay Street</h4>
+                            </div>
+                            <span class="status-pill-green" id="exp-loc-mechanism-badge">DIRECT OVERTOPPING</span>
+                        </div>
+                        <div class="station-readouts-grid">
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Predicted Depth:</span>
+                                <strong class="st-val text-accent" id="exp-loc-depth">-- m</strong>
+                            </div>
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Peak Predicted:</span>
+                                <span class="st-val" id="exp-loc-peak-depth">-- m</span>
+                            </div>
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Ground Elevation:</span>
+                                <span class="st-val" id="exp-loc-ground-elev">-- m OD</span>
+                            </div>
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Water Elevation:</span>
+                                <span class="st-val" id="exp-loc-water-elev">-- m OD</span>
+                            </div>
+                        </div>
+                        <p class="barrier-guide-hint" id="exp-loc-mechanism-desc" style="margin-top: 6px;">
+                            Click anywhere on the 3D map to inspect the physical flood explanation for that specific location.
+                        </p>
+                    </div>
+
+                    <!-- 5. Controlled Sensitivity Explorer Sandbox -->
+                    <div class="hypothetical-sandbox-card" style="margin-top: 8px;">
+                        <div class="hs-header">
+                            <div class="hs-title-group">
+                                <span class="hs-tag">CONTROLLED SENSITIVITY EXPLORER</span>
+                                <span class="hs-sub">Test model input sensitivity without altering operational forecast</span>
+                            </div>
+                            <span class="pill-tag amber">SANDBOX</span>
+                        </div>
+                        <p class="barrier-guide-hint" style="margin-top: 4px;">
+                            Perturbs individual inputs within physically bounded ranges to isolate and quantify model sensitivity:
+                        </p>
+                        <div class="sensitivity-btn-grid">
+                            <button class="btn-sens" id="btn-sens-rain-up">+20% Rain</button>
+                            <button class="btn-sens" id="btn-sens-rain-down">-20% Rain</button>
+                            <button class="btn-sens" id="btn-sens-stage-up">+0.3m Upstream</button>
+                            <button class="btn-sens" id="btn-sens-soil-sat">Saturated Soil (+25%)</button>
+                            <button class="btn-sens reset" id="btn-sens-reset">↺ Reset Sandbox</button>
+                        </div>
+                        <div id="exp-sens-results-box" class="exp-sens-results-box hidden">
+                            <div class="sens-header-row">
+                                <strong id="exp-sens-title">Precipitation +20% Sensitivity</strong>
+                                <span class="pill-tag success" id="exp-sens-delta-badge">+0.18m Peak Stage</span>
+                            </div>
+                            <p class="sens-conclusion-text" id="exp-sens-conclusion">
+                                Perturbation results will appear here.
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 6. Structured Evidence & Provenance Inventory Table -->
+                    <div class="panel-header" style="margin-top: 10px;">
+                        <span class="panel-title">CONTRIBUTING EVIDENCE INVENTORY</span>
+                    </div>
+                    <div class="infra-filter-chips" style="margin-top: 4px;">
+                        <button class="exp-ev-chip active" data-evfilter="all">All Evidence (6)</button>
+                        <button class="exp-ev-chip" data-evfilter="observed_gauge">River Gauges</button>
+                        <button class="exp-ev-chip" data-evfilter="forecast_precipitation">NWP Rain</button>
+                        <button class="exp-ev-chip" data-evfilter="hydrological_parameter">Hydrology Laws</button>
+                    </div>
+                    <div id="exp-evidence-scroll-list" class="defence-assets-scroll-list" style="margin-top: 6px;">
+                        <!-- Populated dynamically by ExplainabilityManager -->
+                    </div>
+
+                    <!-- 7. Scientific Validation & Model Limitations -->
+                    <div class="hospital-access-card" style="margin-top: 8px;">
+                        <div class="hosp-header">
+                            <span class="hosp-title">INDEPENDENT VALIDATION & LIMITATIONS</span>
+                            <span class="pill-tag cyan">HISTORICAL HOLDOUTS</span>
+                        </div>
+                        <div class="exp-val-table-wrap">
+                            <table class="exp-val-table">
+                                <thead>
+                                    <tr>
+                                        <th>Event / Benchmark</th>
+                                        <th>Role</th>
+                                        <th>Obs Peak</th>
+                                        <th>Mod Peak</th>
+                                        <th>MAE</th>
+                                        <th>CSI</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Storm Frank (2015)</strong></td>
+                                        <td><span class="role-tag val">Validation</span></td>
+                                        <td>4.22m</td>
+                                        <td>4.19m</td>
+                                        <td>0.12m</td>
+                                        <td>86%</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Suir Flood (2008)</strong></td>
+                                        <td><span class="role-tag val">Validation</span></td>
+                                        <td>3.82m</td>
+                                        <td>3.86m</td>
+                                        <td>0.13m</td>
+                                        <td>84%</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Benchmark (2000)</strong></td>
+                                        <td><span class="role-tag cal">Calibration</span></td>
+                                        <td>4.35m</td>
+                                        <td>4.32m</td>
+                                        <td>0.11m</td>
+                                        <td>88%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Disclosed Physical Limitations Stack -->
+                        <div class="exp-limitations-stack" style="margin-top: 8px;">
+                            <div class="exp-limit-item">
+                                <span class="exp-limit-bullet">⚠️</span>
+                                <div class="exp-limit-content">
+                                    <strong>No Subterranean Pipe Network:</strong> 2D SWE solver models surface flows only. Road gullies, underground storm sewers, and flap valves are omitted.
+                                </div>
+                            </div>
+                            <div class="exp-limit-item">
+                                <span class="exp-limit-bullet">⚠️</span>
+                                <div class="exp-limit-content">
+                                    <strong>NWP Point-to-Catchment Scaling:</strong> Weather forecasts represent catchment-averaged rainfall across the 2,173 km² Suir basin; unmodeled localized micro-cloudbursts may diverge.
+                                </div>
+                            </div>
+                            <div class="exp-limit-item">
+                                <span class="exp-limit-bullet">⚠️</span>
+                                <div class="exp-limit-content">
+                                    <strong>Interpolated River Bathymetry:</strong> Channel geometry is interpolated from OPW cross-sections; localized riverbed scour is not dynamically computed.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </aside>

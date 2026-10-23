@@ -13,7 +13,7 @@
 
 export const AppState = {
     // Current Active Workspace
-    currentWorkspace: 'live', // 'live' | 'time' | 'intervention' | 'impact' | 'evidence' | 'exercise' | 'science' | 'forecast' | 'defences'
+    currentWorkspace: 'live', // 'live' | 'time' | 'intervention' | 'impact' | 'evidence' | 'exercise' | 'science' | 'forecast' | 'defences' | 'explainable'
     
     // Simulation Scenario
     scenario: 'flood100', // 'normal' | 'flood100' | 'surge' | 'custom'
