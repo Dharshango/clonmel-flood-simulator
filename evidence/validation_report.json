@@ -1,0 +1,34 @@
+{
+  "benchmark": "Ritter 1D Dam-Break Analytical Comparison",
+  "timestamp": "2026-10-23T17:58:05.870Z",
+  "scheme": "Kurganov-Petrova Second-Order Central-Upwind (Minmod Limiter, SSP-RK2)",
+  "parameters": {
+    "initial_depth_h0_m": 10,
+    "breach_location_x0_m": 500,
+    "evaluation_time_t_s": 10,
+    "domain_length_L_m": 1000,
+    "grid_resolution_dx_m": 5,
+    "grid_cells_nx": 200,
+    "gravity_m_s2": 9.81,
+    "cfl": 0.45
+  },
+  "wave_characteristics": {
+    "analytical_wavefront_x_m": 698.0908882306301,
+    "analytical_depression_tail_x_m": 400.95455588468496,
+    "initial_volume_m2": 5000,
+    "final_volume_m2": 4999.982884451725,
+    "time_steps_computed": 71
+  },
+  "metrics": {
+    "nrmse": 0.008550970595061292,
+    "nrmse_percent": 0.8550970595061291,
+    "depth_rmse_m": 0.05801906439609986,
+    "depth_mae_m": 0.025288600949824453,
+    "mass_conservation_error_percent": 0.0003423109654977452
+  },
+  "thresholds": {
+    "nrmse_max_allowed": 0.15,
+    "mass_conservation_error_max_allowed_percent": 1
+  },
+  "passed": true
+}
