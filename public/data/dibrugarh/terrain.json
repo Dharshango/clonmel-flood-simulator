@@ -1,0 +1,18 @@
+{
+  "bbox": {
+    "south": 27.472,
+    "north": 27.495,
+    "west": 94.898,
+    "east": 94.935
+  },
+  "width_m": 3657.050657304871,
+  "height_m": 2548.6665521240484,
+  "grid_w": 600,
+  "grid_h": 400,
+  "dx": 6.095084428841452,
+  "dy": 6.371666380310121,
+  "min_elev": 101.51333618164062,
+  "max_elev": 110.5,
+  "town": "Dibrugarh, Assam, India",
+  "river": "Brahmaputra River"
+}

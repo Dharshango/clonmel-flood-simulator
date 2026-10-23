@@ -1,0 +1,266 @@
+[
+  {
+    "id": "WRD-DIB-DTP-01",
+    "name": "Dibrugarh Town Protection Dyke (DTP) - Western Sector (Nagakhelia)",
+    "shortName": "DTP Dyke Sector 1",
+    "type": "embankment",
+    "subScheme": "Dibrugarh Town Protection Scheme",
+    "riverBank": "South Bank (Brahmaputra)",
+    "structuralType": "Reinforced earthen dyke embankment with geo-bag revetment and boulder pitching",
+    "coordinates": [
+      [
+        94.8975,
+        27.4797
+      ],
+      [
+        94.9,
+        27.482
+      ],
+      [
+        94.9048,
+        27.486
+      ],
+      [
+        94.908,
+        27.4875
+      ]
+    ],
+    "physical": {
+      "crestElevationMOD": 107.0,
+      "crestElevationDatum": "m MSL",
+      "groundElevationMOD": 104.5,
+      "wallHeightAboveGroundM": 2.5,
+      "lengthM": 1200,
+      "designWaterLevelMOD": 105.7,
+      "designFreeboardM": 1.3,
+      "surveyDate": "2024-03-10"
+    },
+    "operational": {
+      "status": "DATA_VERIFIED",
+      "isDemountable": false,
+      "deploymentRequired": false,
+      "conditionGrade": "2 - Good",
+      "conditionNotes": "Revetment intact and reinforced under ADEIFRERMP."
+    },
+    "provenance": {
+      "sourceOrganisation": "Water Resources Department (WRD), Assam",
+      "dataset": "ASDMA Geospatial Assets"
+    }
+  },
+  {
+    "id": "WRD-DIB-DTP-02",
+    "name": "Dibrugarh Town Protection Dyke (DTP) - Central Sector (Graham Bazaar)",
+    "shortName": "DTP Dyke Sector 2",
+    "type": "embankment",
+    "subScheme": "Dibrugarh Town Protection Scheme",
+    "riverBank": "South Bank (Brahmaputra)",
+    "structuralType": "Reinforced earthen dyke embankment with asphalt crest road",
+    "coordinates": [
+      [
+        94.908,
+        27.4875
+      ],
+      [
+        94.9109,
+        27.4886
+      ],
+      [
+        94.9126,
+        27.4893
+      ],
+      [
+        94.916,
+        27.4905
+      ]
+    ],
+    "physical": {
+      "crestElevationMOD": 107.0,
+      "crestElevationDatum": "m MSL",
+      "groundElevationMOD": 104.6,
+      "wallHeightAboveGroundM": 2.4,
+      "lengthM": 1150,
+      "designWaterLevelMOD": 105.7,
+      "designFreeboardM": 1.3,
+      "surveyDate": "2024-03-10"
+    },
+    "operational": {
+      "status": "DATA_VERIFIED",
+      "isDemountable": false,
+      "deploymentRequired": false,
+      "conditionGrade": "2 - Good",
+      "conditionNotes": "Critical protection for Graham Bazaar and AT Road corridor."
+    },
+    "provenance": {
+      "sourceOrganisation": "Water Resources Department (WRD), Assam",
+      "dataset": "ASDMA Geospatial Assets"
+    }
+  },
+  {
+    "id": "WRD-DIB-DTP-03",
+    "name": "Dibrugarh Town Protection Dyke (DTP) - Riverfront Sector (Kachari Ghat / DC Office)",
+    "shortName": "DTP Dyke Sector 3",
+    "type": "embankment",
+    "subScheme": "Dibrugarh Town Protection Scheme",
+    "riverBank": "South Bank (Brahmaputra)",
+    "structuralType": "Earthen embankment with concrete sheet piling and stepped ghat revetment",
+    "coordinates": [
+      [
+        94.916,
+        27.4905
+      ],
+      [
+        94.92,
+        27.4918
+      ],
+      [
+        94.9225,
+        27.4928
+      ]
+    ],
+    "physical": {
+      "crestElevationMOD": 107.2,
+      "crestElevationDatum": "m MSL",
+      "groundElevationMOD": 104.8,
+      "wallHeightAboveGroundM": 2.4,
+      "lengthM": 950,
+      "designWaterLevelMOD": 105.7,
+      "designFreeboardM": 1.5,
+      "surveyDate": "2024-03-10"
+    },
+    "operational": {
+      "status": "DATA_VERIFIED",
+      "isDemountable": false,
+      "deploymentRequired": false,
+      "conditionGrade": "2 - Good",
+      "conditionNotes": "Strengthened riverfront wall protecting administrative district."
+    },
+    "provenance": {
+      "sourceOrganisation": "Water Resources Department (WRD), Assam",
+      "dataset": "ASDMA Geospatial Assets"
+    }
+  },
+  {
+    "id": "WRD-DIB-DTP-04",
+    "name": "Dibrugarh Town Protection Dyke (DTP) - Eastern Sector (Tinkunia / Outfall)",
+    "shortName": "DTP Dyke Sector 4",
+    "type": "embankment",
+    "subScheme": "Dibrugarh Town Protection Scheme",
+    "riverBank": "South Bank (Brahmaputra)",
+    "structuralType": "Reinforced dyke embankment with heavy boulder apron",
+    "coordinates": [
+      [
+        94.9225,
+        27.4928
+      ],
+      [
+        94.9254,
+        27.4957
+      ],
+      [
+        94.935,
+        27.495
+      ]
+    ],
+    "physical": {
+      "crestElevationMOD": 107.0,
+      "crestElevationDatum": "m MSL",
+      "groundElevationMOD": 104.7,
+      "wallHeightAboveGroundM": 2.3,
+      "lengthM": 900,
+      "designWaterLevelMOD": 105.7,
+      "designFreeboardM": 1.3,
+      "surveyDate": "2024-03-10"
+    },
+    "operational": {
+      "status": "DATA_VERIFIED",
+      "isDemountable": false,
+      "deploymentRequired": false,
+      "conditionGrade": "2 - Good",
+      "conditionNotes": "Eastern tie-in with railway and town drain embankment."
+    },
+    "provenance": {
+      "sourceOrganisation": "Water Resources Department (WRD), Assam",
+      "dataset": "ASDMA Geospatial Assets"
+    }
+  },
+  {
+    "id": "WRD-DIB-SLUICE-01",
+    "name": "Dibrugarh Town Drain Major Sluice Gate (Graham Bazaar Outfall)",
+    "shortName": "Graham Bazaar Sluice",
+    "type": "outfall_penstock",
+    "subScheme": "Dibrugarh Town Drainage & Sluice Network",
+    "riverBank": "South Bank (Brahmaputra)",
+    "structuralType": "Multi-vent automated flap gate with vertical lift emergency sluice",
+    "coordinates": [
+      [
+        94.9126,
+        27.4893
+      ],
+      [
+        94.9128,
+        27.4895
+      ]
+    ],
+    "physical": {
+      "crestElevationMOD": 107.0,
+      "crestElevationDatum": "m MSL",
+      "groundElevationMOD": 102.5,
+      "wallHeightAboveGroundM": 4.5,
+      "lengthM": 35,
+      "designWaterLevelMOD": 105.7,
+      "designFreeboardM": 1.3,
+      "surveyDate": "2024-03-10"
+    },
+    "operational": {
+      "status": "DATA_VERIFIED",
+      "isDemountable": false,
+      "deploymentRequired": true,
+      "conditionGrade": "2 - Good",
+      "conditionNotes": "Gates closed during Brahmaputra high stage >105.0 m MSL to prevent river backflow into town."
+    },
+    "provenance": {
+      "sourceOrganisation": "Water Resources Department (WRD), Assam",
+      "dataset": "ASDMA Geospatial Assets"
+    }
+  },
+  {
+    "id": "WRD-DIB-PUMP-01",
+    "name": "Graham Bazaar Stormwater Dewatering Pump Station",
+    "shortName": "Graham Bazaar Pump Station",
+    "type": "pumping_station",
+    "subScheme": "Dibrugarh Stormwater Dewatering Project",
+    "riverBank": "South Bank",
+    "structuralType": "Heavy municipal pumping station (4 x 500 HP dewatering pumps, 35 m\u00b3/s total)",
+    "coordinates": [
+      [
+        94.9122,
+        27.489
+      ],
+      [
+        94.9125,
+        27.4892
+      ]
+    ],
+    "physical": {
+      "crestElevationMOD": 107.5,
+      "crestElevationDatum": "m MSL",
+      "groundElevationMOD": 104.5,
+      "wallHeightAboveGroundM": 3.0,
+      "lengthM": 40,
+      "designWaterLevelMOD": 105.7,
+      "designFreeboardM": 1.8,
+      "surveyDate": "2024-03-10"
+    },
+    "operational": {
+      "status": "DATA_VERIFIED",
+      "isDemountable": false,
+      "deploymentRequired": true,
+      "conditionGrade": "2 - Good",
+      "conditionNotes": "Activated during urban cloudbursts when sluice gates are shut."
+    },
+    "provenance": {
+      "sourceOrganisation": "Water Resources Department (WRD), Assam",
+      "dataset": "ASDMA Geospatial Assets"
+    }
+  }
+]
