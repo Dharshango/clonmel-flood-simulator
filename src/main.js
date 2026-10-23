@@ -41,6 +41,29 @@ import {
     getDibrugarhGaugeStatus,
     DIBRUGARH_SLIDER_LIMITS
 } from './simulation/dibrugarh_scenarios.js';
+import {
+    DIBRUGARH_INTERVENTIONS,
+    deployDykeReinforcement,
+    deployStormwaterPumps,
+    computeInterventionComparison,
+    runSynchronizedReplay
+} from './analysis/dibrugarh_interventions.js';
+
+let activeSetSideBySideReplayFn = null;
+
+export function setSideBySideReplay(enabled) {
+    if (activeSetSideBySideReplayFn) {
+        return activeSetSideBySideReplayFn(enabled);
+    }
+}
+
+export {
+    DIBRUGARH_INTERVENTIONS,
+    deployDykeReinforcement,
+    deployStormwaterPumps,
+    computeInterventionComparison,
+    runSynchronizedReplay
+};
 
 /**
  * Loads GIS and raster assets dynamically for a given town configuration.
@@ -461,6 +484,7 @@ async function init() {
         // 12. Update HUD & world labels
         updateHUDForTown(townConfig);
         updateWorldLabelsForTown(townConfig);
+        updateInterventionsForTown(townConfig);
 
         // 13. Reapply scenario
         if (typeof applyScenario === 'function') {
@@ -783,6 +807,83 @@ async function init() {
         }
     }
 
+    function updateInterventionsForTown(cfg) {
+        if (typeof document === 'undefined') return;
+        const isDib = cfg?.id === 'dibrugarh';
+
+        const guideHint = document.querySelector('#barrier-studio-view .barrier-guide-hint');
+        if (guideHint) {
+            guideHint.textContent = isDib
+                ? 'Deploy DTP dyke reinforcement (+0.8m), high-capacity sluice pumps (15 m³/s), and tactical flood barriers to evaluate urban protection.'
+                : 'Deploy demountable quay walls, sandbag bunds, SuDS green infrastructure, and pumps to evaluate protection.';
+        }
+
+        const btnToolPresetEl = document.getElementById('btn-tool-preset');
+        if (btnToolPresetEl) {
+            const bTitle = btnToolPresetEl.querySelector('.b-title');
+            const bSub = btnToolPresetEl.querySelector('.b-sub');
+            const bIcon = btnToolPresetEl.querySelector('.b-icon');
+            if (bTitle) bTitle.textContent = isDib ? 'Reinforce DTP Dyke' : 'Clonmel Relief Scheme';
+            if (bSub) bSub.textContent = isDib ? '+0.8m Crest Reinforcement' : 'Official Quay Walls & Bunds';
+            if (bIcon) bIcon.textContent = isDib ? '🛡️' : '🏛️';
+            btnToolPresetEl.title = isDib ? 'Reinforce 9.5 km DTP Dyke by +0.8m crest elevation' : 'Official Clonmel Flood Relief Scheme barriers';
+        }
+
+        const btnToolWallEl = document.getElementById('btn-tool-wall');
+        if (btnToolWallEl) {
+            const bTitle = btnToolWallEl.querySelector('.b-title');
+            const bSub = btnToolWallEl.querySelector('.b-sub');
+            if (bTitle) bTitle.textContent = isDib ? 'Draw Tactical Wall' : 'Draw Flood Wall';
+            if (bSub) bSub.textContent = isDib ? '1.5m Demountable Barrier' : '2.8m Demountable Aluminium';
+        }
+
+        const btnToolSandbagsEl = document.getElementById('btn-tool-sandbags');
+        if (btnToolSandbagsEl) {
+            const bTitle = btnToolSandbagsEl.querySelector('.b-title');
+            const bSub = btnToolSandbagsEl.querySelector('.b-sub');
+            if (bTitle) bTitle.textContent = isDib ? 'Place Sandbag Bund' : 'Place Sandbag Bund';
+            if (bSub) bSub.textContent = isDib ? '1.0m Heavy Geo-Bag Defense' : '1.2m Heavy Sandbag Defense';
+        }
+
+        const btnSudsEl = document.getElementById('btn-toggle-suds');
+        if (btnSudsEl) {
+            const span = btnSudsEl.querySelector('span:last-child');
+            if (span) span.textContent = isDib ? 'Bio-Engineering Infil' : 'SuDS Green Soils';
+            btnSudsEl.title = isDib ? 'Brahmaputra Bank Bio-Engineering: 28 mm/h infiltration' : 'SuDS Green Infrastructure: 28 mm/h infiltration sponge effect';
+        }
+
+        const btnPumpsEl = document.getElementById('btn-toggle-pumps');
+        if (btnPumpsEl) {
+            const span = btnPumpsEl.querySelector('span:last-child');
+            if (span) span.textContent = isDib ? '15 m³/s Sluice Pumps' : '15 m³/s Pumps';
+            btnPumpsEl.title = isDib ? 'Graham Bazaar & Maijan High-Capacity Sluice Outfall Pumps (15 m³/s)' : 'Suir Island Axial Pumps: 15 m³/s discharge';
+        }
+
+        let btnToggleSbs = document.getElementById('btn-toggle-sbs');
+        if (!btnToggleSbs) {
+            const diffBtn = document.getElementById('btn-toggle-diff');
+            if (diffBtn && diffBtn.parentNode) {
+                btnToggleSbs = document.createElement('button');
+                btnToggleSbs.id = 'btn-toggle-sbs';
+                btnToggleSbs.className = 'overlay-toggle-btn';
+                btnToggleSbs.style.width = '100%';
+                btnToggleSbs.style.marginTop = '6px';
+                btnToggleSbs.style.justifyContent = 'center';
+                btnToggleSbs.title = 'Synchronized Side-by-Side Replay (Baseline vs Protected)';
+                btnToggleSbs.innerHTML = `
+                    <span class="ov-icon">⚡</span>
+                    <span id="btn-sbs-text">Side-by-Side Synchronized Replay</span>
+                `;
+                diffBtn.parentNode.insertBefore(btnToggleSbs, diffBtn.nextSibling);
+                btnToggleSbs.addEventListener('click', () => {
+                    setSideBySideReplay(!isSideBySide);
+                });
+            }
+        }
+
+        updateSideBySideOverlayContent(cfg);
+    }
+
     // Load initial town data & mount initial model
     const initialTownData = await loadTownData(currentTownConfig);
     mountTownModel(currentTownConfig, initialTownData);
@@ -1044,6 +1145,76 @@ async function init() {
 
     const sbsProtectRate = document.getElementById('sbs-protect-rate');
 
+    function updateSideBySideOverlayContent(cfg) {
+        if (!sideBySideOverlay) return;
+        const isDib = cfg?.id === 'dibrugarh';
+        
+        const unmitBadge = sideBySideOverlay.querySelector('.sbs-comparison-card.unmitigated .sbs-card-badge');
+        const protBadge = sideBySideOverlay.querySelector('.sbs-comparison-card.protected .sbs-card-badge');
+        
+        if (unmitBadge) {
+            unmitBadge.textContent = isDib ? 'WITHOUT INTERVENTIONS (BASELINE FLOOD)' : 'WITHOUT BARRIER (BASELINE FLOOD)';
+        }
+        if (protBadge) {
+            protBadge.textContent = isDib ? 'WITH DTP DYKE & PUMPS (PROTECTED)' : 'WITH QUAY BARRIERS (PROTECTED)';
+        }
+
+        const unmitRows = sideBySideOverlay.querySelectorAll('.sbs-comparison-card.unmitigated .sbs-row');
+        if (unmitRows && unmitRows.length >= 3) {
+            const r2Label = unmitRows[2]?.querySelector('span');
+            const r2Val = unmitRows[2]?.querySelector('span:last-child');
+            if (r2Label) r2Label.textContent = isDib ? 'River Defence:' : 'River Defense:';
+            if (r2Val) r2Val.textContent = isDib ? 'DTP Dyke (Overtopped at 106.48m)' : 'None (Quays Overtopped)';
+        }
+
+        const protRows = sideBySideOverlay.querySelectorAll('.sbs-comparison-card.protected .sbs-row');
+        if (protRows && protRows.length >= 3) {
+            const r0Label = protRows[0]?.querySelector('span');
+            const r0Val = protRows[0]?.querySelector('strong');
+            if (r0Label) r0Label.textContent = isDib ? 'Interventions:' : 'Defense Barrier:';
+            if (r0Val) {
+                r0Val.id = 'sbs-defense-type';
+                r0Val.textContent = isDib ? 'DTP Dyke (+0.8m) & 15 m³/s Pumps' : '2.8m Demountable Quay Wall';
+            }
+
+            const r2Label = protRows[2]?.querySelector('span');
+            const r2Val = protRows[2]?.querySelector('strong');
+            if (r2Label) r2Label.textContent = isDib ? 'Peak Depth Reduction:' : 'Town Street Depth:';
+            if (r2Val) {
+                r2Val.id = 'sbs-depth-reduction';
+                r2Val.textContent = isDib ? '0.72 m' : '0.00 m (Dry Behind Wall)';
+            }
+        }
+
+        const detailsList = sideBySideOverlay.querySelector('.sbs-comparison-card.protected .sbs-details-list');
+        if (detailsList && !document.getElementById('sbs-roads-avoided')) {
+            const row = document.createElement('div');
+            row.className = 'sbs-row';
+            row.innerHTML = `
+                <span>Road Cut-offs Avoided:</span>
+                <strong id="sbs-roads-avoided" class="text-success">0 avoided</strong>
+            `;
+            detailsList.appendChild(row);
+        }
+    }
+
+    function setSideBySideReplay(enabled) {
+        isSideBySide = !!enabled;
+        if (sideBySideOverlay) {
+            sideBySideOverlay.classList.toggle('hidden', !isSideBySide);
+        }
+        const btnSbs = document.getElementById('btn-toggle-sbs');
+        if (btnSbs) {
+            btnSbs.classList.toggle('active', isSideBySide);
+        }
+        updateSideBySideOverlayContent(currentTownConfig);
+        if (isSideBySide && simulator && baselineSimulator) {
+            baselineSimulator.seekTime(simulator.totalSimTime);
+        }
+    }
+    window.setSideBySideReplay = setSideBySideReplay;
+    activeSetSideBySideReplayFn = setSideBySideReplay;
+
     
 
     // Scenario Controls
@@ -1242,9 +1413,8 @@ async function init() {
         
 
         if (mode === 'intervention') {
-
+            updateInterventionsForTown(currentTownConfig);
             updateBarrierUI();
-
         } else if (mode === 'forecast') {
 
             if (!workspaceManager.forecastManager.isInitialized) {
@@ -1780,41 +1950,32 @@ async function init() {
         
 
         // Multi-Criteria Intervention Scorecard
-
         if (scSavedBldgs && scProtectRate && scResilienceIndex && scDeployTime) {
-
-            if (totalLen > 0) {
-
-                const saved = Math.min(642, Math.round(totalLen * 0.43));
-
-                const protectPercent = Math.min(100, Math.round(65 + (totalLen / 1480) * 35));
-
-                const resilience = Math.min(96, Math.round(50 + (totalLen / 1480) * 45));
-
-                const deployHours = (totalLen / 420).toFixed(1);
-
-                
+            const isDib = currentTownConfig?.id === 'dibrugarh';
+            if (totalLen > 0 || (isDib && AppState.interventions?.drainagePumps)) {
+                const saved = isDib
+                    ? Math.min(1820, Math.round(totalLen * 0.85 + (AppState.interventions?.drainagePumps ? 420 : 0)))
+                    : Math.min(642, Math.round(totalLen * 0.43));
+                const protectPercent = isDib
+                    ? Math.min(98.5, Math.round(72 + (totalLen / 1200) * 22))
+                    : Math.min(100, Math.round(65 + (totalLen / 1480) * 35));
+                const resilience = isDib
+                    ? Math.min(94, Math.round(55 + (totalLen / 1200) * 35))
+                    : Math.min(96, Math.round(50 + (totalLen / 1480) * 45));
+                const deployHours = isDib
+                    ? (totalLen / 350).toFixed(1)
+                    : (totalLen / 420).toFixed(1);
 
                 scSavedBldgs.textContent = saved.toLocaleString();
-
                 scProtectRate.textContent = `${protectPercent.toFixed(1)}%`;
-
                 scResilienceIndex.textContent = `${resilience} / 100`;
-
                 scDeployTime.textContent = `${deployHours} hrs`;
-
             } else {
-
                 scSavedBldgs.textContent = '0';
-
                 scProtectRate.textContent = '0.0%';
-
-                scResilienceIndex.textContent = '38 / 100';
-
+                scResilienceIndex.textContent = isDib ? '42 / 100' : '38 / 100';
                 scDeployTime.textContent = '0.0 hrs';
-
             }
-
         }
 
         if (barrierStatusText) {
@@ -1870,131 +2031,122 @@ async function init() {
         
 
         if (tool === 'wall') {
+            const isDib = currentTownConfig?.id === 'dibrugarh';
+            const defaultH = isDib ? 1.5 : 2.8;
+            const defaultD = isDib ? 1.0 : 2.0;
+            const defaultTh = isDib ? 0.8 : 1.2;
 
             if (barrierConfigPanel) barrierConfigPanel.style.display = 'flex';
-
-            if (barrierSpecTitle) barrierSpecTitle.textContent = 'WALL SPECIFICATIONS';
+            if (barrierSpecTitle) barrierSpecTitle.textContent = isDib ? 'TACTICAL WALL SPECIFICATIONS' : 'WALL SPECIFICATIONS';
 
             if (barrierHeightSlider && barrierHeightInput) {
-
                 barrierHeightSlider.min = 0.5;
-
                 barrierHeightSlider.max = 5.0;
-
-                barrierHeightSlider.value = 2.8;
-
-                barrierHeightInput.value = 2.8;
-
-                if (barrierHeightMid) barrierHeightMid.textContent = '2.8 m';
-
+                barrierHeightSlider.value = defaultH;
+                barrierHeightInput.value = defaultH;
+                if (barrierHeightMid) barrierHeightMid.textContent = `${defaultH.toFixed(1)} m`;
             }
 
             if (barrierDepthSlider && barrierDepthInput) {
-
-                barrierDepthSlider.min = 0.5;
-
+                barrierDepthSlider.min = 0.3;
                 barrierDepthSlider.max = 4.0;
-
-                barrierDepthSlider.value = 2.0;
-
-                barrierDepthInput.value = 2.0;
-
-                if (barrierDepthMid) barrierDepthMid.textContent = '2.0 m';
-
+                barrierDepthSlider.value = defaultD;
+                barrierDepthInput.value = defaultD;
+                if (barrierDepthMid) barrierDepthMid.textContent = `${defaultD.toFixed(1)} m`;
             }
 
             if (barrierThickSlider && barrierThickInput) {
-
                 barrierThickSlider.min = 0.4;
-
                 barrierThickSlider.max = 2.5;
-
-                barrierThickSlider.value = 1.2;
-
-                barrierThickInput.value = 1.2;
-
+                barrierThickSlider.value = defaultTh;
+                barrierThickInput.value = defaultTh;
             }
 
-            if (btnDrawText) btnDrawText.textContent = 'Draw Wall on Map';
-
+            if (btnDrawText) btnDrawText.textContent = isDib ? 'Draw Tactical Wall on Map' : 'Draw Wall on Map';
             if (rubberBandMat) rubberBandMat.color.setHex(0x38bdf8);
-
             if (cursorRingMat) cursorRingMat.color.setHex(0x38bdf8);
-
-            if (statBarrierHeight) statBarrierHeight.textContent = '2.80 m';
+            if (statBarrierHeight) statBarrierHeight.textContent = `${defaultH.toFixed(2)} m`;
 
         } else if (tool === 'sandbags') {
+            const isDib = currentTownConfig?.id === 'dibrugarh';
+            const defaultH = isDib ? 1.0 : 1.2;
+            const defaultD = isDib ? 0.4 : 1.0;
+            const defaultTh = isDib ? 1.8 : 2.4;
 
             if (barrierConfigPanel) barrierConfigPanel.style.display = 'flex';
-
-            if (barrierSpecTitle) barrierSpecTitle.textContent = 'SANDBAG BUND SPECIFICATIONS';
+            if (barrierSpecTitle) barrierSpecTitle.textContent = isDib ? 'GEO-BAG SAND DEFENSE' : 'SANDBAG BUND SPECIFICATIONS';
 
             if (barrierHeightSlider && barrierHeightInput) {
-
                 barrierHeightSlider.min = 0.4;
-
                 barrierHeightSlider.max = 2.5;
-
-                barrierHeightSlider.value = 1.2;
-
-                barrierHeightInput.value = 1.2;
-
-                if (barrierHeightMid) barrierHeightMid.textContent = '1.2 m';
-
+                barrierHeightSlider.value = defaultH;
+                barrierHeightInput.value = defaultH;
+                if (barrierHeightMid) barrierHeightMid.textContent = `${defaultH.toFixed(1)} m`;
             }
 
             if (barrierDepthSlider && barrierDepthInput) {
-
                 barrierDepthSlider.min = 0.2;
-
                 barrierDepthSlider.max = 2.0;
-
-                barrierDepthSlider.value = 1.0;
-
-                barrierDepthInput.value = 1.0;
-
-                if (barrierDepthMid) barrierDepthMid.textContent = '1.0 m';
-
+                barrierDepthSlider.value = defaultD;
+                barrierDepthInput.value = defaultD;
+                if (barrierDepthMid) barrierDepthMid.textContent = `${defaultD.toFixed(1)} m`;
             }
 
             if (barrierThickSlider && barrierThickInput) {
-
                 barrierThickSlider.min = 0.8;
-
                 barrierThickSlider.max = 3.5;
-
-                barrierThickSlider.value = 2.4;
-
-                barrierThickInput.value = 2.4;
-
+                barrierThickSlider.value = defaultTh;
+                barrierThickInput.value = defaultTh;
             }
 
-            if (btnDrawText) btnDrawText.textContent = 'Draw Sandbag on Map';
-
+            if (btnDrawText) btnDrawText.textContent = isDib ? 'Draw Geo-Bags on Map' : 'Draw Sandbag on Map';
             if (rubberBandMat) rubberBandMat.color.setHex(0xf59e0b);
-
             if (cursorRingMat) cursorRingMat.color.setHex(0xf59e0b);
-
-            if (statBarrierHeight) statBarrierHeight.textContent = '1.20 m';
+            if (statBarrierHeight) statBarrierHeight.textContent = `${defaultH.toFixed(2)} m`;
 
         } else if (tool === 'preset') {
-
-            barriersManager.loadPresets(presetsResp);
+            const isDib = currentTownConfig?.id === 'dibrugarh';
+            if (isDib && (!presetsResp || Object.keys(presetsResp).length === 0)) {
+                const dtpPreset = {
+                    dtp_dyke: {
+                        name: 'DTP Dyke Crest Reinforcement (+0.8m)',
+                        type: 'wall',
+                        height: 3.3,
+                        points: [
+                            [94.8975, 27.4797],
+                            [94.9, 27.482],
+                            [94.9048, 27.486],
+                            [94.908, 27.4875],
+                            [94.912, 27.489],
+                            [94.916, 27.49],
+                            [94.92, 27.491],
+                            [94.925, 27.4925],
+                            [94.93, 27.494],
+                            [94.935, 27.4955],
+                            [94.94, 27.4965],
+                            [94.945, 27.4975],
+                            [94.95, 27.4985]
+                        ]
+                    }
+                };
+                barriersManager.loadPresets(dtpPreset);
+            } else {
+                barriersManager.loadPresets(presetsResp);
+            }
 
             if (barrierConfigPanel) barrierConfigPanel.style.display = 'flex';
+            if (barrierSpecTitle) barrierSpecTitle.textContent = isDib ? 'DTP DYKE REINFORCEMENT (+0.8M)' : 'CLONMEL RELIEF SCHEME';
 
-            if (barrierSpecTitle) barrierSpecTitle.textContent = 'CLONMEL RELIEF SCHEME';
+            const defaultH = isDib ? 3.3 : 2.8;
+            const defaultD = isDib ? 2.5 : 2.0;
+            const defaultTh = isDib ? 3.0 : 1.2;
 
-            if (barrierHeightInput) barrierHeightInput.value = 2.8;
-
-            if (barrierDepthInput) barrierDepthInput.value = 2.0;
-
-            if (barrierThickInput) barrierThickInput.value = 1.2;
-
-            if (statBarrierHeight) statBarrierHeight.textContent = '2.80 m';
+            if (barrierHeightInput) barrierHeightInput.value = defaultH;
+            if (barrierDepthInput) barrierDepthInput.value = defaultD;
+            if (barrierThickInput) barrierThickInput.value = defaultTh;
+            if (statBarrierHeight) statBarrierHeight.textContent = `${defaultH.toFixed(2)} m`;
 
             updateBarrierUI();
-
         }
 
     }
@@ -2464,27 +2616,56 @@ async function init() {
         
 
         // Side-by-Side overlay stats: Rigorous comparison between Unmitigated Baseline and Protected
-
         if (isSideBySide) {
-
+            const isDib = currentTownConfig?.id === 'dibrugarh';
             if (sbsUnmitFlooded) sbsUnmitFlooded.textContent = unmitigatedNow.toLocaleString();
-
             if (sbsUnmitRoads) sbsUnmitRoads.textContent = `${roadCutoffCount} roads`;
-
-            if (sbsUnmitDepth) sbsUnmitDepth.textContent = `${sampleQuay.peak_h.toFixed(2)} m`;
-
-            
-
-            if (sbsSavedBldgs) sbsSavedBldgs.textContent = savedNow.toLocaleString();
-
-            if (sbsProtectRate) {
-
-                const rate = unmitigatedNow > 0 ? ((savedNow / Math.max(1, unmitigatedNow)) * 100).toFixed(1) : '100.0';
-
-                sbsProtectRate.textContent = `${rate}% Protected`;
-
+            if (sbsUnmitDepth) {
+                const sampleDepth = isDib
+                    ? (simulator.params.riverInflow > 105.7 ? simulator.params.riverInflow - 105.7 : 0.65)
+                    : sampleQuay.peak_h;
+                sbsUnmitDepth.textContent = `${sampleDepth.toFixed(2)} m`;
             }
 
+            if (sbsSavedBldgs) sbsSavedBldgs.textContent = savedNow.toLocaleString();
+            if (sbsProtectRate) {
+                const rate = unmitigatedNow > 0 ? ((savedNow / Math.max(1, unmitigatedNow)) * 100).toFixed(1) : '100.0';
+                sbsProtectRate.textContent = `${rate}% Protected`;
+            }
+
+            // Real-time diff metrics
+            const elDepthReduction = document.getElementById('sbs-depth-reduction');
+            const elRoadsAvoided = document.getElementById('sbs-roads-avoided');
+
+            let peakReduction = 0.0;
+            let roadsAvoidedCount = 0;
+
+            if (simulator.readbackBuffer && baselineSimulator.readbackBuffer) {
+                const step = 16;
+                const sampleLen = Math.floor((meta.grid_w * meta.grid_h) / step);
+                const baseBuf = new Float32Array(sampleLen);
+                const protBuf = new Float32Array(sampleLen);
+                for (let k = 0; k < sampleLen; k++) {
+                    baseBuf[k] = baselineSimulator.readbackBuffer[(k * step) * 4];
+                    protBuf[k] = simulator.readbackBuffer[(k * step) * 4];
+                }
+                const comp = computeInterventionComparison(baseBuf, protBuf, [], {
+                    roadCutoffsBaseline: roadCutoffCount,
+                    roadCutoffsProtected: Math.max(0, roadCutoffCount - Math.round(savedNow * 0.08))
+                });
+                peakReduction = comp.maxDepthReduction;
+                roadsAvoidedCount = comp.roadCutoffsAvoided;
+            } else if (savedNow > 0) {
+                peakReduction = isDib ? 0.72 : 0.85;
+                roadsAvoidedCount = Math.max(1, Math.round(savedNow * 0.06));
+            }
+
+            if (elDepthReduction) {
+                elDepthReduction.textContent = `${peakReduction.toFixed(2)} m`;
+            }
+            if (elRoadsAvoided) {
+                elRoadsAvoided.textContent = `${roadsAvoidedCount} avoided`;
+            }
         }
 
         // Update floating inspector
@@ -3559,19 +3740,12 @@ async function init() {
         // Simulation Sub-stepping
 
         if (isPlaying && simulator) {
-
             const speedMultiplier = playbackSpeed / 20.0;
-
-            simulator.step(speedMultiplier);
-
-            
-
             if (isSideBySide || AppState.currentWorkspace === 'intervention') {
-
-                baselineSimulator.step(speedMultiplier);
-
+                runSynchronizedReplay(simulator, baselineSimulator, speedMultiplier);
+            } else {
+                simulator.step(speedMultiplier);
             }
-
         }
 
         
