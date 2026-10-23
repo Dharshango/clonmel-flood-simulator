@@ -359,6 +359,77 @@ body {
     box-shadow: 0 0 16px rgba(2, 132, 199, 0.4);
 }
 
+/* ==================== TOWN SWITCHER UI (CLONMEL / DIBRUGARH) ==================== */
+.town-switcher-wrap {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    z-index: 101;
+}
+
+.town-switcher-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(13, 19, 32, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 3px 5px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.town-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(26, 36, 54, 0.60);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    padding: 4px 11px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    font-family: inherit;
+    line-height: 1.2;
+}
+
+.town-pill-btn:hover {
+    background: rgba(36, 49, 72, 0.80);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.town-pill-btn.active {
+    background: rgba(14, 165, 233, 0.30);
+    color: #ffffff;
+    border: 1.5px solid rgba(56, 189, 248, 0.85);
+    box-shadow: 0 0 14px rgba(14, 165, 233, 0.45);
+}
+
+.town-pill-flag {
+    font-size: 13px;
+    line-height: 1;
+    display: inline-block;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+}
+
+.town-pill-label {
+    letter-spacing: -0.01em;
+}
+
 /* Right Group: Quick Actions + FPS Counter Badge */
 .header-right-group {
     display: flex;
