@@ -126,6 +126,9 @@
                 <button id="tab-forecast" class="mode-tab" title="Workspace 8: Real-Time Physics-Based Flood Forecasting">
                     Forecast Ops
                 </button>
+                <button id="tab-defences" class="mode-tab" title="Workspace 9: Flood Defence Performance Monitor">
+                    Defence Monitor
+                </button>
             </nav>
 
             <!-- Right: Quick Actions + FPS Counter Badge -->
@@ -1140,6 +1143,164 @@
                     <button id="btn-open-validation-modal" class="primary-button" style="width: 100%; height: 38px; justify-content: center; margin-top: 8px;" type="button">
                         <span class="button-label">📊 Forecast Accuracy & Physical Validation</span>
                     </button>
+                </div>
+
+                <!-- WORKSPACE 9: Flood Defence Performance Monitor View -->
+                <div id="defence-monitor-view" class="hidden">
+                    <div class="panel-header">
+                        <span class="panel-title">FLOOD DEFENCE PERFORMANCE MONITOR</span>
+                        <span id="defence-scheme-badge" class="pill-tag success">14 ASSETS MONITORED</span>
+                    </div>
+
+                    <p class="barrier-guide-hint">
+                        Real-world physical audit of Clonmel Flood Defence Scheme assets. Compares local hydrodynamic water levels against verified crest elevations and tracks operational deployment dependencies.
+                    </p>
+
+                    <!-- Important Disclaimer Pill -->
+                    <div class="defence-disclaimer-pill">
+                        <span class="disc-icon">ℹ️</span>
+                        <span>Monitoring decision-support tool. Does NOT constitute a statutory engineering certification of structural integrity.</span>
+                    </div>
+
+                    <!-- Overview KPI Metrics Row -->
+                    <div class="defence-kpi-row">
+                        <div class="def-kpi-pill">
+                            <span class="def-kpi-val" id="def-kpi-total">14</span>
+                            <span class="def-kpi-lbl">Total Assets</span>
+                        </div>
+                        <div class="def-kpi-pill green">
+                            <span class="def-kpi-val" id="def-kpi-verified">14</span>
+                            <span class="def-kpi-lbl">Verified Data</span>
+                        </div>
+                        <div class="def-kpi-pill cyan">
+                            <span class="def-kpi-val" id="def-kpi-monitored">14</span>
+                            <span class="def-kpi-lbl">Freeboard Monitored</span>
+                        </div>
+                        <div class="def-kpi-pill orange">
+                            <span class="def-kpi-val" id="def-kpi-opcheck">7</span>
+                            <span class="def-kpi-lbl">Operational Check</span>
+                        </div>
+                    </div>
+
+                    <!-- Asset Type Filter Chips -->
+                    <div class="infra-filter-chips" style="margin-top: 8px;">
+                        <button class="def-type-chip active" data-deftype="all">All (14)</button>
+                        <button class="def-type-chip" data-deftype="permanent_wall">🧱 Walls (5)</button>
+                        <button class="def-type-chip" data-deftype="demountable_barrier">🛡️ Demountable (4)</button>
+                        <button class="def-type-chip" data-deftype="embankment">🌱 Embankments (3)</button>
+                        <button class="def-type-chip" data-deftype="pumping_station">⚙️ Pumps (3)</button>
+                        <button class="def-type-chip" data-deftype="outfall_penstock">🚰 Outfalls (2)</button>
+                    </div>
+
+                    <!-- Status Filter Chips -->
+                    <div class="infra-filter-chips" style="margin-top: 4px;">
+                        <button class="def-status-chip active" data-defstatus="all">All Statuses</button>
+                        <button class="def-status-chip" data-defstatus="MONITORING_AVAILABLE">✓ Monitored</button>
+                        <button class="def-status-chip" data-defstatus="REVIEW_RECOMMENDED">⚠️ Review Needed</button>
+                        <button class="def-status-chip" data-defstatus="OPERATIONAL_CONFIRMATION_REQUIRED">⏳ Op. Check</button>
+                    </div>
+
+                    <!-- Hypothetical Scenario Hypothesis Testing Toggle Banner -->
+                    <div class="hypothetical-sandbox-card">
+                        <div class="hs-header">
+                            <div class="hs-title-group">
+                                <span class="hs-tag">SCENARIO HYPOTHESIS SANDBOX</span>
+                                <span class="hs-sub">Simulate operational non-deployment without altering verified facts</span>
+                            </div>
+                            <label class="switch-toggle" title="Toggle Hypothetical Scenario Testing Mode">
+                                <input type="checkbox" id="toggle-hypothetical-mode">
+                                <span class="slider-round"></span>
+                            </label>
+                        </div>
+                        <div id="hypothetical-controls-row" class="hypothetical-controls-row hidden">
+                            <button id="btn-hypo-fail-demountables" class="btn-sub warning" type="button">
+                                ⚠️ Assume Demountables NOT Deployed
+                            </button>
+                            <button id="btn-hypo-reset" class="btn-sub" type="button">
+                                ↺ Reset to Verified Field State
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Selected Asset Deep-Dive Detail Card -->
+                    <div id="defence-detail-card" class="hospital-access-card" style="margin-top: 8px;">
+                        <div class="hosp-header">
+                            <div class="def-card-title-group">
+                                <span class="def-card-type-tag" id="def-card-type">PERMANENT WALL</span>
+                                <h4 class="def-card-name" id="def-card-name">North Quay Permanent Flood Wall</h4>
+                                <span class="def-card-id" id="def-card-id">Asset ID: OPW-CLM-W01 • Clonmel Central Quay</span>
+                            </div>
+                            <span id="def-card-status-badge" class="status-pill-green">MONITORING ACTIVE</span>
+                        </div>
+
+                        <!-- Physical & Crest Dimensions Grid -->
+                        <div class="station-readouts-grid">
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Verified Crest:</span>
+                                <strong class="st-val text-accent" id="def-card-crest">22.40 m OD</strong>
+                            </div>
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Ground Elevation:</span>
+                                <span class="st-val" id="def-card-ground">21.00 m OD</span>
+                            </div>
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Asset Length:</span>
+                                <span class="st-val" id="def-card-length">440 m</span>
+                            </div>
+                            <div class="station-readout-item">
+                                <span class="st-lbl">Design Freeboard:</span>
+                                <span class="st-val" id="def-card-design-fb">0.60 m</span>
+                            </div>
+                        </div>
+
+                        <!-- Real-Time Freeboard Analysis Gauge -->
+                        <div class="freeboard-analysis-box" id="def-card-freeboard-box">
+                            <div class="fb-header-row">
+                                <span class="fb-lbl">CALCULATED FREEBOARD (CREST − WATER SURFACE):</span>
+                                <strong class="fb-val text-success" id="def-card-freeboard-val">+1.20 m</strong>
+                            </div>
+                            <div class="residual-bar-track">
+                                <div id="def-card-freeboard-fill" class="residual-bar-fill good" style="width: 75%;"></div>
+                            </div>
+                            <div class="fb-meta-sub">
+                                <span>Local Water Level: <strong id="def-card-water-level">21.20 m OD</strong></span>
+                                <span class="hud-sep">•</span>
+                                <span>Uncertainty: <strong id="def-card-uncertainty">±0.09 m</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Operational Dependency Notice (Demountables & Pumps) -->
+                        <div id="def-card-operational-section" class="infra-detail-section">
+                            <span class="infra-detail-lbl">Operational Dependency:</span>
+                            <span id="def-card-operational-text" class="infra-detail-val text-amber">
+                                Manual deployment required upon flood alert. Deployment status unconfirmed in field.
+                            </span>
+                        </div>
+
+                        <!-- Inspection & Maintenance Records -->
+                        <div class="infra-detail-section">
+                            <div class="inspect-rec-head">
+                                <span class="infra-detail-lbl">Documented Maintenance & Inspection:</span>
+                                <span class="def-cond-badge" id="def-card-condition-grade">Grade 2 - Good</span>
+                            </div>
+                            <span id="def-card-inspection-notes" class="infra-detail-val">
+                                Last inspected 2024-04-12 by OPW & Tipperary CoCo. Minor repointing completed; expansion joints sound.
+                            </span>
+                        </div>
+
+                        <!-- Provenance & Traceability Footer -->
+                        <div class="infra-provenance-foot">
+                            <span id="def-card-provenance">Source: OPW As-Built Register (2045/AB/102) • Malin Head OD</span>
+                        </div>
+                    </div>
+
+                    <!-- Scrollable Mapped Asset Inventory List -->
+                    <div class="panel-header" style="margin-top: 8px;">
+                        <span class="panel-title">MAPPED DEFENCE ASSET INVENTORY</span>
+                    </div>
+                    <div id="defence-assets-scroll-list" class="defence-assets-scroll-list">
+                        <!-- Populated dynamically by DefencePerformanceManager -->
+                    </div>
                 </div>
             </aside>
 

@@ -188,6 +188,7 @@ async function init() {
     const tabExercise = document.getElementById('tab-exercise');
     const tabScience = document.getElementById('tab-science');
     const tabForecast = document.getElementById('tab-forecast');
+    const tabDefences = document.getElementById('tab-defences');
     
     const scenarioControlsView = document.getElementById('scenario-controls-view');
     const timeMachineView = document.getElementById('time-machine-view');
@@ -197,6 +198,7 @@ async function init() {
     const commandExerciseView = document.getElementById('command-exercise-view');
     const scienceValidationView = document.getElementById('science-validation-view');
     const forecastOpsView = document.getElementById('forecast-ops-view');
+    const defenceMonitorView = document.getElementById('defence-monitor-view');
     const sideBySideOverlay = document.getElementById('side-by-side-overlay');
     
     // Workspace Elements Bundle for WorkspaceManager
@@ -209,7 +211,8 @@ async function init() {
             evidence: tabEvidence,
             exercise: tabExercise,
             science: tabScience,
-            forecast: tabForecast
+            forecast: tabForecast,
+            defences: tabDefences
         },
         leftPanels: {
             live: scenarioControlsView,
@@ -219,7 +222,8 @@ async function init() {
             evidence: communityEvidenceView,
             exercise: commandExerciseView,
             science: scienceValidationView,
-            forecast: forecastOpsView
+            forecast: forecastOpsView,
+            defences: defenceMonitorView
         },
         overlayToggles: document.querySelectorAll('.overlay-toggle-btn'),
         historicalBtns: document.querySelectorAll('.historical-event-card'),
@@ -252,6 +256,7 @@ async function init() {
     
     window.workspaceManager = workspaceManager;
     window.forecastManager = workspaceManager.forecastManager;
+    window.defenceManager = workspaceManager.defenceManager;
     
     // Ingest live/cached telemetry and compute real-time forecast cycle
     workspaceManager.forecastManager.executeForecastCycle().catch(err => {
@@ -379,6 +384,10 @@ async function init() {
             if (!workspaceManager.forecastManager.isInitialized) {
                 workspaceManager.forecastManager.executeForecastCycle();
             }
+        } else if (mode === 'defences') {
+            if (workspaceManager.defenceManager) {
+                workspaceManager.defenceManager.setVisible(true);
+            }
         }
     }
     
@@ -388,6 +397,7 @@ async function init() {
     if (tabImpact) tabImpact.addEventListener('click', () => setMode('impact'));
     if (tabScience) tabScience.addEventListener('click', () => setMode('science'));
     if (tabForecast) tabForecast.addEventListener('click', () => setMode('forecast'));
+    if (tabDefences) tabDefences.addEventListener('click', () => setMode('defences'));
     
     // Interactive Map Drawing 3D Primitives & Materials
     const drawingGroup = new THREE.Group();
@@ -1389,6 +1399,20 @@ async function init() {
                 if (drawVertexCount) drawVertexCount.textContent = count;
                 if (hudVertexCount) hudVertexCount.textContent = count;
                 if (hudLengthCount) hudLengthCount.textContent = `${totalDrawnLengthMeters.toFixed(1)} m`;
+                return;
+            }
+        }
+        
+        // If in Defence Monitor Workspace: check if user clicked on a 3D defence asset
+        if (AppState.currentWorkspace === 'defences' && workspaceManager.defenceManager) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), camera);
+            const picked = workspaceManager.defenceManager.layer3D.pickAsset(raycaster);
+            if (picked) {
+                workspaceManager.defenceManager.selectAsset(picked.id);
                 return;
             }
         }

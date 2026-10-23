@@ -1,0 +1,773 @@
+{
+  "metadata": {
+    "scheme": "Clonmel Flood Defence Scheme",
+    "authority": "Office of Public Works (OPW) & Tipperary County Council",
+    "designer": "Mott MacDonald Ireland",
+    "datum": "Malin Head Ordnance Datum (m OD)",
+    "designStandard": "1-in-100-Year Fluvial Event (450 m³/s)",
+    "license": "Creative Commons Attribution 4.0 International (CC BY 4.0) / Open Government Data",
+    "disclaimer": "This defence dataset is compiled for decision-support and scenario inspection. It does NOT constitute a statutory safety certification or formal engineering guarantee of asset performance.",
+    "lastUpdated": "2026-10-23T18:45:00Z"
+  },
+  "assets": [
+    {
+      "id": "OPW-CLM-W01",
+      "name": "North Quay Permanent Flood Wall",
+      "shortName": "North Quay Wall",
+      "type": "permanent_wall",
+      "subScheme": "Clonmel Central Quay",
+      "riverBank": "North Bank",
+      "structuralType": "Reinforced concrete cantilever wall with cut-limestone facing",
+      "coordinates": [
+        [-7.7080, 52.3530],
+        [-7.7058, 52.3532],
+        [-7.7038, 52.3533],
+        [-7.7015, 52.3534]
+      ],
+      "physical": {
+        "crestElevationMOD": 22.40,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 21.00,
+        "wallHeightAboveGroundM": 1.40,
+        "lengthM": 440,
+        "thicknessM": 0.45,
+        "designWaterLevelMOD": 21.80,
+        "designFreeboardM": 0.60,
+        "surveyDate": "2013-09-15",
+        "surveyUncertaintyM": 0.05
+      },
+      "operational": {
+        "status": "DATA_VERIFIED",
+        "isDemountable": false,
+        "deploymentRequired": false,
+        "lastInspectionDate": "2024-04-12",
+        "inspectionSource": "OPW & Tipperary CoCo Joint Annual Inspection",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Minor repointing to limestone copings along Quay Street completed; expansion joints sound.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Office of Public Works (OPW)",
+        "documentReference": "Clonmel Flood Defence Scheme As-Built Asset Register (2045/AB/102)",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.5,
+        "limitations": "Crest elevation verified at 50m intervals; localized coping settling within ±0.03m tolerance."
+      }
+    },
+    {
+      "id": "OPW-CLM-W02",
+      "name": "Irishtown / Convent Bridge Upstream Flood Wall",
+      "shortName": "Irishtown Wall",
+      "type": "permanent_wall",
+      "subScheme": "Clonmel West",
+      "riverBank": "North Bank",
+      "structuralType": "Reinforced concrete flood parapet wall",
+      "coordinates": [
+        [-7.7135, 52.3524],
+        [-7.7110, 52.3526],
+        [-7.7082, 52.3529]
+      ],
+      "physical": {
+        "crestElevationMOD": 23.20,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 21.80,
+        "wallHeightAboveGroundM": 1.40,
+        "lengthM": 380,
+        "thicknessM": 0.40,
+        "designWaterLevelMOD": 22.60,
+        "designFreeboardM": 0.60,
+        "surveyDate": "2013-09-15",
+        "surveyUncertaintyM": 0.05
+      },
+      "operational": {
+        "status": "DATA_VERIFIED",
+        "isDemountable": false,
+        "deploymentRequired": false,
+        "lastInspectionDate": "2024-04-12",
+        "inspectionSource": "OPW Asset Maintenance Log",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Structural concrete parapet sound; riverbed scour protection intact.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Office of Public Works (OPW)",
+        "documentReference": "Clonmel Flood Relief Scheme West Contract (2045/AB/105)",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.5,
+        "limitations": "Upstream boundary ties into Convent Bridge abutment."
+      }
+    },
+    {
+      "id": "OPW-CLM-W03",
+      "name": "South Bank & Denis Burke Park Perimeter Wall",
+      "shortName": "Denis Burke Wall",
+      "type": "permanent_wall",
+      "subScheme": "Clonmel South",
+      "riverBank": "South Bank",
+      "structuralType": "Reinforced concrete wall with stone cladding",
+      "coordinates": [
+        [-7.7075, 52.3516],
+        [-7.7045, 52.3518],
+        [-7.7010, 52.3518]
+      ],
+      "physical": {
+        "crestElevationMOD": 22.15,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 20.85,
+        "wallHeightAboveGroundM": 1.30,
+        "lengthM": 460,
+        "thicknessM": 0.45,
+        "designWaterLevelMOD": 21.65,
+        "designFreeboardM": 0.50,
+        "surveyDate": "2013-09-18",
+        "surveyUncertaintyM": 0.05
+      },
+      "operational": {
+        "status": "DATA_VERIFIED",
+        "isDemountable": false,
+        "deploymentRequired": false,
+        "lastInspectionDate": "2024-04-14",
+        "inspectionSource": "OPW Inspection Log",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Park frontage dry and sound; non-return drainage flaps operating freely.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Office of Public Works (OPW)",
+        "documentReference": "Clonmel Flood Relief Scheme South Contract (2045/AB/112)",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.5,
+        "limitations": "Directly borders Denis Burke Park green amenity."
+      }
+    },
+    {
+      "id": "OPW-CLM-W04",
+      "name": "Gashouse Bridge & Davis Road Flood Wall",
+      "shortName": "Gashouse Wall",
+      "type": "permanent_wall",
+      "subScheme": "Clonmel East",
+      "riverBank": "North/East Bank",
+      "structuralType": "Reinforced concrete cantilever wall",
+      "coordinates": [
+        [-7.6960, 52.3526],
+        [-7.6935, 52.3525],
+        [-7.6915, 52.3524]
+      ],
+      "physical": {
+        "crestElevationMOD": 21.65,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 20.25,
+        "wallHeightAboveGroundM": 1.40,
+        "lengthM": 310,
+        "thicknessM": 0.45,
+        "designWaterLevelMOD": 21.10,
+        "designFreeboardM": 0.55,
+        "surveyDate": "2013-09-20",
+        "surveyUncertaintyM": 0.05
+      },
+      "operational": {
+        "status": "DATA_VERIFIED",
+        "isDemountable": false,
+        "deploymentRequired": false,
+        "lastInspectionDate": "2024-04-14",
+        "inspectionSource": "OPW Asset Register",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "East channel wall intact; downstream hydrodynamic transition verified.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Office of Public Works (OPW)",
+        "documentReference": "Clonmel Flood Relief Scheme East Contract (2045/AB/116)",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.5,
+        "limitations": "Downstream model boundary interface."
+      }
+    },
+    {
+      "id": "OPW-CLM-W05",
+      "name": "Convent Bridge Parapet Retaining Wall",
+      "shortName": "Convent Bridge Wall",
+      "type": "permanent_wall",
+      "subScheme": "Clonmel West",
+      "riverBank": "North Bank",
+      "structuralType": "Masonry clad reinforced concrete parapet",
+      "coordinates": [
+        [-7.7160, 52.3520],
+        [-7.7145, 52.3522],
+        [-7.7136, 52.3524]
+      ],
+      "physical": {
+        "crestElevationMOD": 23.65,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 22.25,
+        "wallHeightAboveGroundM": 1.40,
+        "lengthM": 190,
+        "thicknessM": 0.40,
+        "designWaterLevelMOD": 23.05,
+        "designFreeboardM": 0.60,
+        "surveyDate": "2013-09-12",
+        "surveyUncertaintyM": 0.05
+      },
+      "operational": {
+        "status": "DATA_VERIFIED",
+        "isDemountable": false,
+        "deploymentRequired": false,
+        "lastInspectionDate": "2024-04-10",
+        "inspectionSource": "OPW Asset Register",
+        "conditionGrade": "1 - Very Good",
+        "conditionNotes": "No defects recorded; masonry copings in excellent condition.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Office of Public Works (OPW)",
+        "documentReference": "Clonmel West Flood Relief (2045/AB/101)",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.5,
+        "limitations": "Upstream river entry wing wall."
+      }
+    },
+    {
+      "id": "OPW-CLM-DB01",
+      "name": "The Quay Commercial & Pedestrian Demountable Openings",
+      "shortName": "The Quay Demountable Gaps",
+      "type": "demountable_barrier",
+      "subScheme": "Clonmel Central Quay",
+      "riverBank": "North Bank",
+      "structuralType": "IBS Technics aluminium demountable stop-logs with stainless steel ground sockets",
+      "coordinates": [
+        [-7.7042, 52.3533],
+        [-7.7038, 52.3533]
+      ],
+      "physical": {
+        "crestElevationMOD": 22.40,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 21.15,
+        "wallHeightAboveGroundM": 1.25,
+        "lengthM": 36,
+        "thicknessM": 0.20,
+        "designWaterLevelMOD": 21.80,
+        "designFreeboardM": 0.60,
+        "surveyDate": "2013-09-15",
+        "surveyUncertaintyM": 0.05
+      },
+      "operational": {
+        "status": "OPERATIONAL_CONFIRMATION_REQUIRED",
+        "isDemountable": true,
+        "deploymentRequired": true,
+        "deploymentStatus": "UNCONFIRMED_DEPLOYMENT",
+        "deploymentProcedure": "Tipperary County Council Emergency Deployment Plan SOP-FLD-04",
+        "estimatedDeploymentTimeHours": 2.5,
+        "requiredPersonnel": "3 trained local authority crews (12 personnel)",
+        "storageLocation": "Tipperary County Council Machinery Yard, Carrigeen, Clonmel",
+        "lastInspectionDate": "2024-03-22",
+        "inspectionSource": "Annual Demountable Barrier Deployment Drill Log",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Ground sockets cleaned and greased; elastomer seal packs replaced October 2023.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Tipperary County Council & OPW",
+        "documentReference": "Clonmel Demountable Flood Barrier Deployment Protocol (Doc Ref: TCC-FLD-2022-V3)",
+        "sourceUrl": "https://www.tipperarycoco.ie/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.0,
+        "limitations": "Deployment relies on minimum 4 hours advance flood warning from OPW gauge 16011."
+      }
+    },
+    {
+      "id": "OPW-CLM-DB02",
+      "name": "Old Bridge North Approach Demountable Gate",
+      "shortName": "Old Bridge Demountable Gap",
+      "type": "demountable_barrier",
+      "subScheme": "Clonmel Central",
+      "riverBank": "North Channel Entry",
+      "structuralType": "Demountable aluminium barrier system across historic bridge abutment",
+      "coordinates": [
+        [-7.7042, 52.3516],
+        [-7.7040, 52.3517]
+      ],
+      "physical": {
+        "crestElevationMOD": 22.25,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 21.05,
+        "wallHeightAboveGroundM": 1.20,
+        "lengthM": 14,
+        "thicknessM": 0.20,
+        "designWaterLevelMOD": 21.75,
+        "designFreeboardM": 0.50,
+        "surveyDate": "2013-09-16",
+        "surveyUncertaintyM": 0.05
+      },
+      "operational": {
+        "status": "OPERATIONAL_CONFIRMATION_REQUIRED",
+        "isDemountable": true,
+        "deploymentRequired": true,
+        "deploymentStatus": "UNCONFIRMED_DEPLOYMENT",
+        "deploymentProcedure": "Clonmel Borough District Deployment Protocol Gap 2",
+        "estimatedDeploymentTimeHours": 1.5,
+        "requiredPersonnel": "1 deployment crew (4 personnel)",
+        "storageLocation": "Clonmel Town Depot",
+        "lastInspectionDate": "2024-03-22",
+        "inspectionSource": "Annual Demountable Barrier Deployment Drill Log",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Erected during 2024 flood exercise in 58 minutes. Rubber gaskets in satisfactory condition.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Tipperary County Council & OPW",
+        "documentReference": "Clonmel Flood Defence Operation Manual Section 4.3",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.0,
+        "limitations": "Requires road closure of Old Bridge approach prior to assembly."
+      }
+    },
+    {
+      "id": "OPW-CLM-DB03",
+      "name": "Suir Island Footbridge Demountable Access Gate",
+      "shortName": "Suir Island Gap",
+      "type": "demountable_barrier",
+      "subScheme": "Suir Island",
+      "riverBank": "Island North Perimeter",
+      "structuralType": "Demountable aluminium stop-log barrier across footbridge abutment",
+      "coordinates": [
+        [-7.7058, 52.3526],
+        [-7.7056, 52.3527]
+      ],
+      "physical": {
+        "crestElevationMOD": 22.75,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 21.55,
+        "wallHeightAboveGroundM": 1.20,
+        "lengthM": 8,
+        "thicknessM": 0.15,
+        "designWaterLevelMOD": 22.15,
+        "designFreeboardM": 0.60,
+        "surveyDate": "2013-09-16",
+        "surveyUncertaintyM": 0.05
+      },
+      "operational": {
+        "status": "OPERATIONAL_CONFIRMATION_REQUIRED",
+        "isDemountable": true,
+        "deploymentRequired": true,
+        "deploymentStatus": "UNCONFIRMED_DEPLOYMENT",
+        "deploymentProcedure": "Clonmel Borough District Deployment Protocol Gap 4",
+        "estimatedDeploymentTimeHours": 1.0,
+        "requiredPersonnel": "2 personnel",
+        "storageLocation": "Suir Island Depot Locker",
+        "lastInspectionDate": "2024-03-22",
+        "inspectionSource": "Annual Drill Log",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Stop logs stored on site inside locked cabinet; key held by Duty Engineer.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Tipperary County Council",
+        "documentReference": "Clonmel Scheme Operational Register (TCC-2045-DB03)",
+        "sourceUrl": "https://www.tipperarycoco.ie/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.0,
+        "limitations": "Pedestrian footbridge access only."
+      }
+    },
+    {
+      "id": "OPW-CLM-DB04",
+      "name": "Convent Road Slipway Demountable Barrier",
+      "shortName": "Convent Road Slipway",
+      "type": "demountable_barrier",
+      "subScheme": "Clonmel West",
+      "riverBank": "North Bank",
+      "structuralType": "Demountable flood barrier across boat slipway opening",
+      "coordinates": [
+        [-7.7122, 52.3523],
+        [-7.7120, 52.3524]
+      ],
+      "physical": {
+        "crestElevationMOD": 23.40,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 22.10,
+        "wallHeightAboveGroundM": 1.30,
+        "lengthM": 12,
+        "thicknessM": 0.20,
+        "designWaterLevelMOD": 22.80,
+        "designFreeboardM": 0.60,
+        "surveyDate": "2013-09-14",
+        "surveyUncertaintyM": 0.05
+      },
+      "operational": {
+        "status": "OPERATIONAL_CONFIRMATION_REQUIRED",
+        "isDemountable": true,
+        "deploymentRequired": true,
+        "deploymentStatus": "UNCONFIRMED_DEPLOYMENT",
+        "deploymentProcedure": "Clonmel Borough District Deployment Protocol Gap 1",
+        "estimatedDeploymentTimeHours": 1.0,
+        "requiredPersonnel": "2 personnel",
+        "storageLocation": "West Gate Depot",
+        "lastInspectionDate": "2024-03-22",
+        "inspectionSource": "Annual Drill Log",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Ground channel clean; rubber seals in good order.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Tipperary County Council & OPW",
+        "documentReference": "Clonmel Flood Defence Operation Manual Section 4.1",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.0,
+        "limitations": "Closes civic recreational access to river slipway."
+      }
+    },
+    {
+      "id": "OPW-CLM-E01",
+      "name": "Suir Island Perimeter Earthen Embankment",
+      "shortName": "Suir Island Embankment",
+      "type": "embankment",
+      "subScheme": "Suir Island",
+      "riverBank": "Island Perimeter",
+      "structuralType": "Compacted clay core earthen flood embankment with rock armor toe protection",
+      "coordinates": [
+        [-7.7080, 52.3522],
+        [-7.7055, 52.3521],
+        [-7.7032, 52.3520]
+      ],
+      "physical": {
+        "crestElevationMOD": 22.80,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 21.30,
+        "wallHeightAboveGroundM": 1.50,
+        "lengthM": 390,
+        "thicknessM": 3.50,
+        "designWaterLevelMOD": 22.20,
+        "designFreeboardM": 0.60,
+        "surveyDate": "2013-09-17",
+        "surveyUncertaintyM": 0.08
+      },
+      "operational": {
+        "status": "DATA_VERIFIED",
+        "isDemountable": false,
+        "deploymentRequired": false,
+        "lastInspectionDate": "2024-05-08",
+        "inspectionSource": "OPW Embankment Visual Survey",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Vegetation cover established; no animal burrowing or significant crest settlement detected.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Office of Public Works (OPW)",
+        "documentReference": "Clonmel Flood Relief Scheme Embankment Schedule (2045/AB/108)",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 2.0,
+        "limitations": "Crest elevation subject to ±0.08m natural compaction variance."
+      }
+    },
+    {
+      "id": "OPW-CLM-E02",
+      "name": "Old Bridge South Riverside Embankment",
+      "shortName": "Old Bridge South Embankment",
+      "type": "embankment",
+      "subScheme": "Clonmel South",
+      "riverBank": "South Bank",
+      "structuralType": "Earthen flood bund with grassed embankment slope",
+      "coordinates": [
+        [-7.7040, 52.3512],
+        [-7.7022, 52.3514],
+        [-7.7005, 52.3515]
+      ],
+      "physical": {
+        "crestElevationMOD": 22.20,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 20.80,
+        "wallHeightAboveGroundM": 1.40,
+        "lengthM": 290,
+        "thicknessM": 3.00,
+        "designWaterLevelMOD": 21.65,
+        "designFreeboardM": 0.55,
+        "surveyDate": "2013-09-18",
+        "surveyUncertaintyM": 0.08
+      },
+      "operational": {
+        "status": "DATA_VERIFIED",
+        "isDemountable": false,
+        "deploymentRequired": false,
+        "lastInspectionDate": "2024-05-08",
+        "inspectionSource": "OPW Embankment Visual Survey",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Satisfactory turf cover; crest level stable.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Office of Public Works (OPW)",
+        "documentReference": "Clonmel Flood Relief Scheme South Contract (2045/AB/113)",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 2.0,
+        "limitations": "Integrates into Old Bridge south approach abutment."
+      }
+    },
+    {
+      "id": "OPW-CLM-E03",
+      "name": "Davis Road / Showgrounds Flood Embankment",
+      "shortName": "Showgrounds Embankment",
+      "type": "embankment",
+      "subScheme": "Clonmel East",
+      "riverBank": "South Floodplain",
+      "structuralType": "Earthen flood embankment with interior drainage toe-ditch",
+      "coordinates": [
+        [-7.6980, 52.3515],
+        [-7.6950, 52.3516],
+        [-7.6920, 52.3518]
+      ],
+      "physical": {
+        "crestElevationMOD": 21.35,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 19.95,
+        "wallHeightAboveGroundM": 1.40,
+        "lengthM": 440,
+        "thicknessM": 3.20,
+        "designWaterLevelMOD": 20.80,
+        "designFreeboardM": 0.55,
+        "surveyDate": "2013-09-20",
+        "surveyUncertaintyM": 0.08
+      },
+      "operational": {
+        "status": "REVIEW_RECOMMENDED",
+        "isDemountable": false,
+        "deploymentRequired": false,
+        "lastInspectionDate": "2024-05-10",
+        "inspectionSource": "OPW Embankment Visual Survey",
+        "conditionGrade": "3 - Fair (Review Recommended)",
+        "conditionNotes": "Localized pedestrian track wear and minor crest rutting noted on eastern chainage (Ch 320m); regrading recommended before winter flood season.",
+        "knownDefects": [
+          "Superficial crest rutting (approx 0.08m depth over 15m stretch) from maintenance vehicle access."
+        ]
+      },
+      "provenance": {
+        "sourceOrganisation": "Office of Public Works (OPW)",
+        "documentReference": "Clonmel Flood Relief Scheme East Contract (2045/AB/118)",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 2.0,
+        "limitations": "Crest rutting reduces effective local freeboard by approximately 0.08m pending maintenance regrading."
+      }
+    },
+    {
+      "id": "OPW-CLM-PS01",
+      "name": "Suir Island Axial Stormwater Pumping Station",
+      "shortName": "Suir Island Pumping Station",
+      "type": "pumping_station",
+      "subScheme": "Suir Island",
+      "riverBank": "Island Interior",
+      "structuralType": "Submersible axial flow stormwater pumping station with duty/assist/standby pumps",
+      "coordinates": [
+        [-7.7045, 52.3522]
+      ],
+      "physical": {
+        "crestElevationMOD": 22.80,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 20.80,
+        "wetWellFloorMOD": 16.50,
+        "pumpCapacityM3S": 15.0,
+        "pumpCount": 3,
+        "pumpConfiguration": "2 Duty (2 x 5.0 m³/s) + 1 Standby (5.0 m³/s)",
+        "outfallType": "Over-the-wall high-level siphon discharge",
+        "surveyDate": "2013-09-17"
+      },
+      "operational": {
+        "status": "OPERATIONAL_CONFIRMATION_REQUIRED",
+        "operationalStatus": "UNCONFIRMED_TELEMETRY",
+        "isPumpingStation": true,
+        "drainageCatchmentAreaHa": 14.5,
+        "backupPower": "Automatic transfer switch with 350 kVA on-site standby diesel generator",
+        "lastInspectionDate": "2024-03-18",
+        "inspectionSource": "Tipperary CoCo M&E Service Records",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Pumps 1 & 2 serviced March 2024; generator run-on-load test passed.",
+        "telemetryNote": "No public SCADA telemetry stream available; physical operational status requires local confirmation.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Tipperary County Council & Mott MacDonald",
+        "documentReference": "Suir Island Pumping Station O&M Manual (MM-CLM-PS01-O&M)",
+        "sourceUrl": "https://www.tipperarycoco.ie/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.0,
+        "limitations": "Hydraulic impact on internal ponding cannot be verified without real-time pump telemetry."
+      }
+    },
+    {
+      "id": "OPW-CLM-PS02",
+      "name": "Davis Road Commercial Stormwater Pumping Station",
+      "shortName": "Davis Road Pumping Station",
+      "type": "pumping_station",
+      "subScheme": "Clonmel East",
+      "riverBank": "North Urban Drain",
+      "structuralType": "Wet-well submersible stormwater pump station",
+      "coordinates": [
+        [-7.6912, 52.3530]
+      ],
+      "physical": {
+        "crestElevationMOD": 21.65,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 19.80,
+        "wetWellFloorMOD": 16.00,
+        "pumpCapacityM3S": 4.5,
+        "pumpCount": 3,
+        "pumpConfiguration": "2 Duty + 1 Standby (1.5 m³/s each)",
+        "outfallType": "Submerged discharge with duckbill check valve",
+        "surveyDate": "2013-09-20"
+      },
+      "operational": {
+        "status": "OPERATIONAL_CONFIRMATION_REQUIRED",
+        "operationalStatus": "UNCONFIRMED_TELEMETRY",
+        "isPumpingStation": true,
+        "drainageCatchmentAreaHa": 28.0,
+        "backupPower": "Fixed standby diesel generator (120 kVA)",
+        "lastInspectionDate": "2024-03-20",
+        "inspectionSource": "Tipperary CoCo M&E Service Records",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Wet well desilted February 2024; check valves functioning properly.",
+        "telemetryNote": "Operational status unconfirmed via remote interface.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Tipperary County Council & Mott MacDonald",
+        "documentReference": "Davis Road Pumping Station Spec (MM-CLM-PS02)",
+        "sourceUrl": "https://www.tipperarycoco.ie/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.0,
+        "limitations": "Internal commercial stormwater collection only."
+      }
+    },
+    {
+      "id": "OPW-CLM-PS03",
+      "name": "Irishtown Surface Water Sump Station",
+      "shortName": "Irishtown Sump Station",
+      "type": "pumping_station",
+      "subScheme": "Clonmel West",
+      "riverBank": "North Urban Drain",
+      "structuralType": "Compact underground storm sump with dual submersible cutter pumps",
+      "coordinates": [
+        [-7.7110, 52.3540]
+      ],
+      "physical": {
+        "crestElevationMOD": 23.20,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 21.20,
+        "wetWellFloorMOD": 18.20,
+        "pumpCapacityM3S": 2.2,
+        "pumpCount": 2,
+        "pumpConfiguration": "1 Duty + 1 Standby (2.2 m³/s)",
+        "outfallType": "High-level pumped discharge into West Channel",
+        "surveyDate": "2013-09-15"
+      },
+      "operational": {
+        "status": "OPERATIONAL_CONFIRMATION_REQUIRED",
+        "operationalStatus": "UNCONFIRMED_TELEMETRY",
+        "isPumpingStation": true,
+        "drainageCatchmentAreaHa": 11.2,
+        "backupPower": "Mobile generator connection socket (Dual power interlock)",
+        "lastInspectionDate": "2024-02-15",
+        "inspectionSource": "Tipperary CoCo Service Log",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Control panel inspected; level transducers calibrated.",
+        "telemetryNote": "Remote operational status unconfirmed.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Tipperary County Council",
+        "documentReference": "Clonmel West Urban Drainage Maintenance Register (TCC-UDR-PS03)",
+        "sourceUrl": "https://www.tipperarycoco.ie/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.0,
+        "limitations": "Relies on manual deployment of mobile generator if mains power is interrupted."
+      }
+    },
+    {
+      "id": "OPW-CLM-CU01",
+      "name": "Showgrounds Twin Box Culvert & Tideflex Outfall",
+      "shortName": "Showgrounds Culvert Outfall",
+      "type": "outfall_penstock",
+      "subScheme": "Clonmel East",
+      "riverBank": "South Bank",
+      "structuralType": "Twin 1200mm precast box culvert with elastomeric duckbill non-return valves",
+      "coordinates": [
+        [-7.6965, 52.3522]
+      ],
+      "physical": {
+        "crestElevationMOD": 21.35,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 19.95,
+        "invertElevationMOD": 18.20,
+        "obvertElevationMOD": 19.40,
+        "diameterMm": 1200,
+        "outfallProtection": "Dual Tideflex duckbill check valves (Class 150)",
+        "surveyDate": "2013-09-20"
+      },
+      "operational": {
+        "status": "MONITORING_AVAILABLE",
+        "operationalStatus": "GRAVITY_PASSIVE_OPERATIONAL",
+        "isPassiveGravity": true,
+        "lastInspectionDate": "2024-02-14",
+        "inspectionSource": "OPW Culvert & Outfall Siltation Survey",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Duckbill rubber sleeves inspected; free of wedged gravel or debris; closes tight against river head.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Office of Public Works (OPW)",
+        "documentReference": "Clonmel Flood Relief Scheme Drainage Outfalls (2045/AB/305)",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.0,
+        "limitations": "Passive valve seals automatically under external river hydrostatic pressure."
+      }
+    },
+    {
+      "id": "OPW-CLM-CU02",
+      "name": "St. Luke's Well Surface Water Outfall & Penstock",
+      "shortName": "St. Luke's Well Penstock",
+      "type": "outfall_penstock",
+      "subScheme": "Clonmel South",
+      "riverBank": "South Channel",
+      "structuralType": "900mm circular outfall with motorized penstock and tidal flap",
+      "coordinates": [
+        [-7.7078, 52.3514]
+      ],
+      "physical": {
+        "crestElevationMOD": 22.15,
+        "crestElevationDatum": "Malin Head OD",
+        "groundElevationMOD": 20.85,
+        "invertElevationMOD": 18.80,
+        "obvertElevationMOD": 19.70,
+        "diameterMm": 900,
+        "outfallProtection": "Cast-iron tidal flap valve + emergency motorized penstock spindle",
+        "surveyDate": "2013-09-18"
+      },
+      "operational": {
+        "status": "MONITORING_AVAILABLE",
+        "operationalStatus": "GRAVITY_PASSIVE_OPERATIONAL",
+        "isPassiveGravity": true,
+        "lastInspectionDate": "2024-02-14",
+        "inspectionSource": "OPW Outfall Maintenance Log",
+        "conditionGrade": "2 - Good",
+        "conditionNotes": "Hinge pins lubricated; manual spindle exercising successful.",
+        "knownDefects": []
+      },
+      "provenance": {
+        "sourceOrganisation": "Office of Public Works (OPW)",
+        "documentReference": "Clonmel South Drainage Outfall Register (2045/AB/309)",
+        "sourceUrl": "https://www.gov.ie/en/office-of-public-works/publications/clonmel-flood-defence-scheme/",
+        "verificationStatus": "VERIFIED_SOURCE",
+        "positionalUncertaintyM": 1.0,
+        "limitations": "Penstock closed manually or via local level switch if river stage exceeds 21.0m OD."
+      }
+    }
+  ]
+}

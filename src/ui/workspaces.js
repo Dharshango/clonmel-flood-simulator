@@ -16,6 +16,7 @@ import { InfrastructureDependencyManager } from '../analysis/infrastructure_depe
 import { CommunityEvidenceManager } from '../evidence/community_evidence.js';
 import { EmergencyCommandExerciseManager } from '../exercise/command_exercise.js';
 import { ForecastManager } from '../forecasting/forecast_manager.js';
+import { DefencePerformanceManager } from '../defences/defence_manager.js';
 
 export class WorkspaceManager {
     constructor(elements, simulator, baselineSimulator, roadGraph, interventionEngine, validationMetrics, overlays, barriersManager, scene, meta, elevArray) {
@@ -43,6 +44,11 @@ export class WorkspaceManager {
         this.forecastManager = new ForecastManager();
         this.forecastManager.onUpdate(() => this.updateForecastUI());
         
+        // Flood Defence Performance Monitor Manager
+        this.defenceManager = new DefencePerformanceManager(scene, meta, elevArray);
+        this.defenceManager.onUpdate(() => this.updateDefenceUI());
+        this.defenceManager.loadDefenceDataset();
+        
         // Active Filter States
         this.evidenceActiveFilter = 'all';
         
@@ -52,6 +58,7 @@ export class WorkspaceManager {
     
     initEventListeners() {
         this.initForecastControls();
+        this.initDefenceControls();
         const { tabs, overlayToggles, scenarioBtns, historicalBtns, interventionControls, storyControls } = this.elements;
         
         // 1. Top Workspace Tabs
@@ -305,6 +312,14 @@ export class WorkspaceManager {
             this.infraManager.setVisible(false);
             this.evidenceManager.setVisible(false);
             this.updateForecastUI();
+        } else if (ws === 'defences') {
+            this.infraManager.setVisible(false);
+            this.evidenceManager.setVisible(false);
+            this.updateDefenceUI();
+        }
+        
+        if (this.defenceManager) {
+            this.defenceManager.setVisible(ws === 'defences');
         }
         
         this.updateOverlayLegend();
@@ -1362,5 +1377,235 @@ export class WorkspaceManager {
         ctx.fillStyle = '#38bdf8';
         ctx.font = 'bold 9px "JetBrains Mono", monospace';
         ctx.fillText(`+${curLead}h (${curStage.toFixed(2)}m)`, Math.min(w - 75, Math.max(padLeft, xMarker - 25)), padTop + 9);
+    }
+
+    initDefenceControls() {
+        // Type filter chips
+        const typeChips = document.querySelectorAll('.def-type-chip');
+        typeChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                typeChips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                this.defenceManager.setTypeFilter(chip.dataset.deftype);
+            });
+        });
+
+        // Status filter chips
+        const statusChips = document.querySelectorAll('.def-status-chip');
+        statusChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                statusChips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                this.defenceManager.setStatusFilter(chip.dataset.defstatus);
+            });
+        });
+
+        // Hypothetical scenario sandbox mode toggle
+        const toggleHypo = document.getElementById('toggle-hypothetical-mode');
+        const hypoControls = document.getElementById('hypothetical-controls-row');
+        if (toggleHypo && hypoControls) {
+            toggleHypo.addEventListener('change', (e) => {
+                hypoControls.classList.toggle('hidden', !e.target.checked);
+                if (!e.target.checked) {
+                    this.defenceManager.clearHypotheticalOverrides();
+                }
+            });
+        }
+
+        const btnFailDemountables = document.getElementById('btn-hypo-fail-demountables');
+        if (btnFailDemountables) {
+            btnFailDemountables.addEventListener('click', () => {
+                // Set all demountable barriers to NOT_DEPLOYED
+                this.defenceManager.assets.forEach(a => {
+                    if (a.operational?.isDemountable) {
+                        this.defenceManager.setHypotheticalOverride(a.id, {
+                            deploymentStatus: 'NOT_DEPLOYED'
+                        });
+                    }
+                });
+            });
+        }
+
+        const btnHypoReset = document.getElementById('btn-hypo-reset');
+        if (btnHypoReset) {
+            btnHypoReset.addEventListener('click', () => {
+                this.defenceManager.clearHypotheticalOverrides();
+            });
+        }
+    }
+
+    updateDefenceUI() {
+        if (!this.defenceManager || !this.defenceManager.isLoaded) return;
+        const dm = this.defenceManager;
+
+        // Evaluate all assets against active simulation water levels
+        const gaugeTel = this.forecastManager?.telemetry?.stations?.clonmel?.latest || null;
+        const evaluations = dm.evaluateAll(this.simulator, gaugeTel);
+
+        // 1. Overview Scorecard Metrics
+        const total = dm.assets.length;
+        let verifiedCount = 0;
+        let monitoredCount = 0;
+        let opCheckCount = 0;
+
+        evaluations.forEach(ev => {
+            if (ev.asset.provenance?.verificationStatus === 'VERIFIED_SOURCE') verifiedCount++;
+            if (ev.freeboard.isCalculable) monitoredCount++;
+            if (ev.status.statusCode === 'OPERATIONAL_CONFIRMATION_REQUIRED') opCheckCount++;
+        });
+
+        const elTot = document.getElementById('def-kpi-total');
+        const elVer = document.getElementById('def-kpi-verified');
+        const elMon = document.getElementById('def-kpi-monitored');
+        const elOp = document.getElementById('def-kpi-opcheck');
+        if (elTot) elTot.textContent = total;
+        if (elVer) elVer.textContent = verifiedCount;
+        if (elMon) elMon.textContent = monitoredCount;
+        if (elOp) elOp.textContent = opCheckCount;
+
+        // 2. Render Scrollable Asset Inventory List
+        const listEl = document.getElementById('defence-assets-scroll-list');
+        if (listEl) {
+            const typeFilter = dm.activeTypeFilter;
+            const statusFilter = dm.activeStatusFilter;
+
+            const filtered = evaluations.filter(ev => {
+                const matchType = typeFilter === 'all' || ev.asset.type === typeFilter;
+                const matchStatus = statusFilter === 'all' || ev.status.statusCode === statusFilter;
+                return matchType && matchStatus;
+            });
+
+            listEl.innerHTML = filtered.map(ev => {
+                const a = ev.asset;
+                const fb = ev.freeboard;
+                const st = ev.status;
+                const isSelected = dm.selectedAsset?.id === a.id;
+
+                let fbLabel = 'Crest N/A';
+                if (fb.isCalculable) {
+                    fbLabel = fb.freeboardM >= 0 
+                        ? `+${fb.freeboardM.toFixed(2)}m fb` 
+                        : `${fb.freeboardM.toFixed(2)}m over`;
+                }
+
+                return `
+                    <div class="def-asset-row-item ${isSelected ? 'selected' : ''}" data-def-id="${a.id}">
+                        <div class="def-item-left">
+                            <span class="def-item-icon">${a.type === 'demountable_barrier' ? '🛡️' : a.type === 'pumping_station' ? '⚙️' : a.type === 'embankment' ? '🌱' : a.type === 'outfall_penstock' ? '🚰' : '🧱'}</span>
+                            <div class="def-item-meta">
+                                <span class="def-item-title">${a.shortName || a.name}</span>
+                                <span class="def-item-sub">${a.subScheme} • ${a.id}</span>
+                            </div>
+                        </div>
+                        <div class="def-item-right">
+                            <span class="${st.status.cssClass}">${st.status.label}</span>
+                            <span class="def-item-crest">${fb.crestElevationMOD ? fb.crestElevationMOD.toFixed(2) + 'm OD' : ''} (${fbLabel})</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Wire click selection
+            listEl.querySelectorAll('.def-asset-row-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const id = item.dataset.defId;
+                    dm.selectAsset(id);
+                });
+            });
+        }
+
+        // 3. Render Selected Asset Deep-Dive Card
+        const selAsset = dm.selectedAsset;
+        if (selAsset) {
+            const ev = evaluations.find(e => e.asset.id === selAsset.id) || {
+                asset: selAsset,
+                freeboard: dm.freeboardAnalyzer.evaluateAssetFreeboard(selAsset, this.simulator, gaugeTel),
+                status: dm.statusEngine.evaluateStatus(selAsset, null, dm.scenarioOverrides)
+            };
+
+            const a = ev.asset;
+            const fb = ev.freeboard;
+            const st = ev.status;
+
+            const elType = document.getElementById('def-card-type');
+            const elName = document.getElementById('def-card-name');
+            const elId = document.getElementById('def-card-id');
+            const elStatusBadge = document.getElementById('def-card-status-badge');
+            const elCrest = document.getElementById('def-card-crest');
+            const elGround = document.getElementById('def-card-ground');
+            const elLength = document.getElementById('def-card-length');
+            const elDesignFb = document.getElementById('def-card-design-fb');
+
+            if (elType) elType.textContent = a.type.replace('_', ' ').toUpperCase();
+            if (elName) elName.textContent = a.name;
+            if (elId) elId.textContent = `Asset ID: ${a.id} • ${a.subScheme} (${a.riverBank || 'River Corridor'})`;
+
+            if (elStatusBadge) {
+                elStatusBadge.className = st.status.cssClass;
+                elStatusBadge.textContent = st.status.label;
+            }
+
+            if (elCrest) elCrest.textContent = a.physical?.crestElevationMOD ? `${a.physical.crestElevationMOD.toFixed(2)} m OD` : 'Unsurveyed';
+            if (elGround) elGround.textContent = a.physical?.groundElevationMOD ? `${a.physical.groundElevationMOD.toFixed(2)} m OD` : 'N/A';
+            if (elLength) elLength.textContent = a.physical?.lengthM ? `${a.physical.lengthM} m` : a.physical?.pumpCapacityM3S ? `${a.physical.pumpCapacityM3S} m³/s` : 'Point Asset';
+            if (elDesignFb) elDesignFb.textContent = a.physical?.designFreeboardM ? `${a.physical.designFreeboardM.toFixed(2)} m` : 'N/A';
+
+            // Freeboard box
+            const elFbVal = document.getElementById('def-card-freeboard-val');
+            const elFbFill = document.getElementById('def-card-freeboard-fill');
+            const elWaterLevel = document.getElementById('def-card-water-level');
+            const elUncertainty = document.getElementById('def-card-uncertainty');
+
+            if (fb.isCalculable) {
+                if (elFbVal) {
+                    elFbVal.textContent = fb.freeboardM >= 0 ? `+${fb.freeboardM.toFixed(2)} m` : `${fb.freeboardM.toFixed(2)} m (Overtopped)`;
+                    elFbVal.className = fb.freeboardM >= 0.50 ? 'fb-val text-success' : fb.freeboardM >= 0.15 ? 'fb-val text-amber' : 'fb-val text-danger';
+                }
+                if (elFbFill) {
+                    const pct = Math.max(0, Math.min(100, (fb.freeboardM / 1.5) * 100));
+                    elFbFill.style.width = `${pct}%`;
+                    elFbFill.className = fb.freeboardM >= 0.50 ? 'residual-bar-fill good' : fb.freeboardM >= 0.15 ? 'residual-bar-fill caution' : 'residual-bar-fill alert';
+                }
+                if (elWaterLevel) elWaterLevel.textContent = `${fb.waterLevelMOD.toFixed(2)} m OD`;
+                if (elUncertainty) elUncertainty.textContent = `±${fb.combinedUncertaintyM.toFixed(2)} m`;
+            } else {
+                if (elFbVal) {
+                    elFbVal.textContent = 'Comparison N/A';
+                    elFbVal.className = 'fb-val text-amber';
+                }
+                if (elWaterLevel) elWaterLevel.textContent = 'Insufficient data';
+                if (elUncertainty) elUncertainty.textContent = 'N/A';
+            }
+
+            // Operational Dependency Notice
+            const elOpText = document.getElementById('def-card-operational-text');
+            if (elOpText) {
+                if (a.operational?.isDemountable) {
+                    const depStatus = dm.scenarioOverrides[a.id]?.deploymentStatus || a.operational.deploymentStatus;
+                    elOpText.innerHTML = `<strong>Demountable Barrier:</strong> ${a.operational.deploymentProcedure}. Required: ${a.operational.requiredPersonnel}. Assembly: ~${a.operational.estimatedDeploymentTimeHours}h.<br><span style="color:${depStatus === 'CONFIRMED_DEPLOYED' ? '#34d399' : '#f59e0b'};">Status: ${depStatus.replace('_', ' ')}</span>`;
+                } else if (a.operational?.isPumpingStation) {
+                    elOpText.innerHTML = `<strong>Stormwater Pumping Station:</strong> ${a.physical.pumpConfiguration}. Backup: ${a.operational.backupPower}.<br><span style="color:#f59e0b;">Status: ${a.operational.operationalStatus.replace('_', ' ')} (${a.operational.telemetryNote})</span>`;
+                } else {
+                    elOpText.textContent = 'Permanent passive barrier. Continuous structural containment without manual deployment dependency.';
+                }
+            }
+
+            // Maintenance / Condition notes
+            const elCondGrade = document.getElementById('def-card-condition-grade');
+            const elInspectNotes = document.getElementById('def-card-inspection-notes');
+            if (elCondGrade) {
+                elCondGrade.textContent = a.operational?.conditionGrade || 'Unrecorded';
+                elCondGrade.className = a.operational?.conditionGrade?.includes('Review') ? 'def-cond-badge review' : 'def-cond-badge';
+            }
+            if (elInspectNotes) {
+                elInspectNotes.textContent = `Last inspected: ${a.operational?.lastInspectionDate || 'N/A'} (${a.operational?.inspectionSource || 'OPW'}). Findings: ${a.operational?.conditionNotes || 'No defect notes.'}`;
+            }
+
+            // Provenance footer
+            const elProv = document.getElementById('def-card-provenance');
+            if (elProv) {
+                elProv.textContent = `Source: ${a.provenance?.sourceOrganisation || 'OPW'} • ${a.provenance?.documentReference || 'Scheme Records'} • Datum: ${a.physical?.crestElevationDatum || 'Malin Head OD'}`;
+            }
+        }
     }
 }
