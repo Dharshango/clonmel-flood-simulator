@@ -1,0 +1,38 @@
+name: CI Quality & Validation Suite
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  validate-and-build:
+    name: Numerical Benchmarks, Unit Tests & Production Build
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Execute Numerical Benchmarks and Unit Tests
+        run: npm test
+
+      - name: Verify Analytical Dam-Break Benchmark & Mass Conservation
+        run: npm run test:benchmark
+
+      - name: Build Production Client
+        run: npm run build

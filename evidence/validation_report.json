@@ -1,6 +1,6 @@
 {
   "benchmark": "Ritter 1D Dam-Break Analytical Comparison",
-  "timestamp": "2026-10-23T17:58:05.870Z",
+  "timestamp": "2026-10-24T07:00:45.940Z",
   "scheme": "Kurganov-Petrova Second-Order Central-Upwind (Minmod Limiter, SSP-RK2)",
   "parameters": {
     "initial_depth_h0_m": 10,

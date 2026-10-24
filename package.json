@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.js",
+    "test:benchmark": "node scripts/run_mass_conservation_check.js"
   },
   "dependencies": {
     "puppeteer-core": "^24.40.0",
