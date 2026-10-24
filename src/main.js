@@ -158,6 +158,49 @@ async function init() {
     let currentTownConfig = getTownConfig(initialTownId);
     console.log(`Initializing Hydroverse (${currentTownConfig.name}, ${currentTownConfig.riverName})...`);
 
+    // UI Elements - Hero Section (Initialized immediately for instant fluid animation & responsive launch)
+    const heroSection = typeof document !== 'undefined' ? document.getElementById('hero-section') : null;
+    const heroBg = typeof document !== 'undefined' ? initHydroverseHero() : null;
+
+    const launchSimulation = () => {
+        if (heroSection) {
+            heroSection.classList.add('hidden');
+            heroSection.style.display = 'none';
+        }
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('resize'));
+        }
+    };
+
+    if (typeof document !== 'undefined') {
+        const heroLaunchButtons = document.querySelectorAll('#run-scenario, #btn-hero-launch, #btn-hero-launch-cta, .launch-btn');
+        heroLaunchButtons.forEach(btn => {
+            btn.addEventListener('click', launchSimulation);
+        });
+
+        const btnBackHero = document.getElementById('btn-back-hero');
+        if (btnBackHero && heroSection) {
+            btnBackHero.addEventListener('click', () => {
+                heroSection.style.display = '';
+                heroSection.classList.remove('hidden');
+                if (heroBg && typeof heroBg.start === 'function') {
+                    heroBg.start();
+                }
+            });
+        }
+
+        const brandNavHome = document.getElementById('brand-nav-home');
+        if (brandNavHome && heroSection) {
+            brandNavHome.addEventListener('click', () => {
+                heroSection.style.display = '';
+                heroSection.classList.remove('hidden');
+                if (heroBg && typeof heroBg.start === 'function') {
+                    heroBg.start();
+                }
+            });
+        }
+    }
+
     // Early DOM bindings for scenario and sliders
     let activeScenarioTag = typeof document !== 'undefined' ? document.getElementById('active-scenario-tag') : null;
     let sliderInflow = typeof document !== 'undefined' ? document.getElementById('slider-inflow') : null;
@@ -259,6 +302,7 @@ async function init() {
     let cameraVantageIndex = 0;
     let activeBarrierTool = 'wall';
     let pendingBarrierPoint = null;
+    let selectedInspectUV = { u: 0.53, v: 0.44, street: 'The Quay / Quay Street', lon: -7.7063, lat: 52.3553 };
     let sideBySideOverlay = typeof document !== 'undefined' ? document.getElementById('side-by-side-overlay') : null;
     let statBarrierLength = typeof document !== 'undefined' ? document.getElementById('stat-barrier-length') : null;
     let scWallLength = typeof document !== 'undefined' ? document.getElementById('sc-wall-length') : null;
@@ -948,45 +992,7 @@ async function init() {
 
     
 
-    // UI Elements - Hero Section
-
-    const heroSection = document.getElementById('hero-section');
-
-    const btnHeroLaunch = document.getElementById('run-scenario') || document.getElementById('btn-hero-launch');
-
-    const btnBackHero = document.getElementById('btn-back-hero');
-
-    const brandNavHome = document.getElementById('brand-nav-home');
-
-    const heroBg = initHydroverseHero();
-
-    
-
-    const launchSimulation = () => {
-        if (heroSection) {
-            heroSection.classList.add('hidden');
-            heroSection.style.display = 'none';
-        }
-    };
-
-    if (btnHeroLaunch) btnHeroLaunch.addEventListener('click', launchSimulation);
-
-    if (btnBackHero && heroSection) {
-        btnBackHero.addEventListener('click', () => {
-            heroSection.style.display = '';
-            heroSection.classList.remove('hidden');
-        });
-    }
-
-    if (brandNavHome && heroSection) {
-
-        brandNavHome.addEventListener('click', () => {
-
-            heroSection.classList.remove('hidden');
-
-        });
-
-    }
+// Hero section initialized early at start of init()
 
     
 
@@ -1434,7 +1440,7 @@ async function init() {
 
     // Selected Inspection Point (defaults to Quay Street)
 
-    let selectedInspectUV = { u: 0.53, v: 0.44, street: 'The Quay / Quay Street' };
+    if (!selectedInspectUV) selectedInspectUV = { u: 0.53, v: 0.44, street: 'The Quay / Quay Street', lon: -7.7063, lat: 52.3553 };
 
     
 
