@@ -339,6 +339,7 @@ export function initHydroverseHero() {
 
     // Telemetry updates (throttled to avoid DOM reflow bottleneck)
     function updateReadout(time) {
+        if (!levelText && !extentText && !extentMeter && !coordinates) return;
         if (time - lastReadout < 120) return;
         lastReadout = time;
         const meters = Math.max(0, (waterLevel - 0.31) * 6.1);
