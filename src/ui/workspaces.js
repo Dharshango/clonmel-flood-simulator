@@ -396,7 +396,6 @@ export class WorkspaceManager {
                     item.addEventListener('click', () => {
                         const id = item.dataset.facId;
                         this.infraManager.highlightDependencies(id);
-                        this._lastInfraSelectedId = id;
                         this.updateInfraView();
                     });
                 });
@@ -418,6 +417,12 @@ export class WorkspaceManager {
                     }
                 });
             }
+            
+            // Always sync active selection class
+            const activeFacId = this.infraManager.selectedFacility?.id;
+            listEl.querySelectorAll('.infra-facility-item').forEach(item => {
+                item.classList.toggle('selected', item.dataset.facId === activeFacId);
+            });
         }
         
         // Update selected facility deep-dive card
@@ -1486,42 +1491,82 @@ export class WorkspaceManager {
                 return matchType && matchStatus;
             });
 
-            listEl.innerHTML = filtered.map(ev => {
-                const a = ev.asset;
-                const fb = ev.freeboard;
-                const st = ev.status;
-                const isSelected = dm.selectedAsset?.id === a.id;
+            const activeDefId = dm.selectedAsset?.id;
+            const needsDefRebuild = !listEl.hasChildNodes() || 
+                this._lastDefTypeFilter !== typeFilter || 
+                this._lastDefStatusFilter !== statusFilter ||
+                listEl.children.length !== filtered.length;
 
-                let fbLabel = 'Crest N/A';
-                if (fb.isCalculable) {
-                    fbLabel = fb.freeboardM >= 0 
-                        ? `+${fb.freeboardM.toFixed(2)}m fb` 
-                        : `${fb.freeboardM.toFixed(2)}m over`;
-                }
+            if (needsDefRebuild) {
+                this._lastDefTypeFilter = typeFilter;
+                this._lastDefStatusFilter = statusFilter;
+                listEl.innerHTML = filtered.map(ev => {
+                    const a = ev.asset;
+                    const fb = ev.freeboard;
+                    const st = ev.status;
+                    const isSelected = activeDefId === a.id;
 
-                return `
-                    <div class="def-asset-row-item ${isSelected ? 'selected' : ''}" data-def-id="${a.id}">
-                        <div class="def-item-left">
-                            <span class="def-item-icon">${a.type === 'demountable_barrier' ? '🛡️' : a.type === 'pumping_station' ? '⚙️' : a.type === 'embankment' ? '🌱' : a.type === 'outfall_penstock' ? '🚰' : '🧱'}</span>
-                            <div class="def-item-meta">
-                                <span class="def-item-title">${a.shortName || a.name}</span>
-                                <span class="def-item-sub">${a.subScheme} • ${a.id}</span>
+                    let fbLabel = 'Crest N/A';
+                    if (fb.isCalculable) {
+                        fbLabel = fb.freeboardM >= 0 
+                            ? `+${fb.freeboardM.toFixed(2)}m fb` 
+                            : `${fb.freeboardM.toFixed(2)}m over`;
+                    }
+
+                    return `
+                        <div class="def-asset-row-item ${isSelected ? 'selected' : ''}" data-def-id="${a.id}">
+                            <div class="def-item-left">
+                                <span class="def-item-icon">${a.type === 'demountable_barrier' ? '🛡️' : a.type === 'pumping_station' ? '⚙️' : a.type === 'embankment' ? '🌱' : a.type === 'outfall_penstock' ? '🚰' : '🧱'}</span>
+                                <div class="def-item-meta">
+                                    <span class="def-item-title">${a.shortName || a.name}</span>
+                                    <span class="def-item-sub">${a.subScheme} • ${a.id}</span>
+                                </div>
+                            </div>
+                            <div class="def-item-right">
+                                <span class="${st.status.cssClass}">${st.status.label}</span>
+                                <span class="def-item-crest">${fb.crestElevationMOD ? fb.crestElevationMOD.toFixed(2) + 'm OD' : ''} (${fbLabel})</span>
                             </div>
                         </div>
-                        <div class="def-item-right">
-                            <span class="${st.status.cssClass}">${st.status.label}</span>
-                            <span class="def-item-crest">${fb.crestElevationMOD ? fb.crestElevationMOD.toFixed(2) + 'm OD' : ''} (${fbLabel})</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
 
-            // Wire click selection
-            listEl.querySelectorAll('.def-asset-row-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    const id = item.dataset.defId;
-                    dm.selectAsset(id);
+                // Wire click selection
+                listEl.querySelectorAll('.def-asset-row-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const id = item.dataset.defId;
+                        dm.selectAsset(id);
+                        this.updateDefenceUI();
+                    });
                 });
+            } else {
+                // Update in place without destroying DOM elements
+                filtered.forEach(ev => {
+                    const item = listEl.querySelector(`[data-def-id="${ev.asset.id}"]`);
+                    if (item) {
+                        const st = ev.status;
+                        const fb = ev.freeboard;
+                        const badge = item.querySelector('.def-item-right > span:first-child');
+                        const crestEl = item.querySelector('.def-item-crest');
+                        if (badge) {
+                            badge.className = st.status.cssClass;
+                            badge.textContent = st.status.label;
+                        }
+                        if (crestEl) {
+                            let fbLabel = 'Crest N/A';
+                            if (fb.isCalculable) {
+                                fbLabel = fb.freeboardM >= 0 
+                                    ? `+${fb.freeboardM.toFixed(2)}m fb` 
+                                    : `${fb.freeboardM.toFixed(2)}m over`;
+                            }
+                            crestEl.textContent = `${fb.crestElevationMOD ? fb.crestElevationMOD.toFixed(2) + 'm OD' : ''} (${fbLabel})`;
+                        }
+                    }
+                });
+            }
+
+            // Always update selected class on all rows
+            listEl.querySelectorAll('.def-asset-row-item').forEach(row => {
+                row.classList.toggle('selected', row.dataset.defId === activeDefId);
             });
         }
 

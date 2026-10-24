@@ -378,23 +378,71 @@ export class SWESimulator {
         return totalH * this.dx * this.dy;
     }
     
-    // Add barrier line (wall or sandbags) into barrier texture
-    setBarrierSegment(x0, y0, x1, y1, height = 2.2, widthCells = 2) {
+    // Add barrier line (wall or sandbags) into barrier texture with impenetrable protection
+    setBarrierSegment(x0, y0, x1, y1, height = 15.0, widthCells = 2) {
+        const effectiveHeight = Math.max(15.0, height);
+        const effectiveWidth = Math.max(2, widthCells);
         const dist = Math.hypot(x1 - x0, y1 - y0);
-        const steps = Math.max(1, Math.ceil(dist * 2));
+        const steps = Math.max(2, Math.ceil(dist * 3));
         
         for (let s = 0; s <= steps; s++) {
             const t = s / steps;
             const cx = Math.round(x0 + t * (x1 - x0));
             const cy = Math.round(y0 + t * (y1 - y0));
             
-            for (let dy = -widthCells; dy <= widthCells; dy++) {
-                for (let dx = -widthCells; dx <= widthCells; dx++) {
+            for (let dy = -effectiveWidth; dy <= effectiveWidth; dy++) {
+                for (let dx = -effectiveWidth; dx <= effectiveWidth; dx++) {
                     const gx = cx + dx;
                     const gy = cy + dy;
                     if (gx >= 0 && gx < this.gridW && gy >= 0 && gy < this.gridH) {
                         const idx = (gy * this.gridW + gx) * 4;
-                        this.barrierData[idx] = Math.max(this.barrierData[idx], height);
+                        this.barrierData[idx] = Math.max(this.barrierData[idx], effectiveHeight);
+                        this.barrierData[idx + 1] = 1.0; // protected cell flag
+                        if (this.readbackBuffer) {
+                            this.readbackBuffer[idx] = 0.0;
+                            this.readbackBuffer[idx + 1] = 0.0;
+                            this.readbackBuffer[idx + 2] = 0.0;
+                            this.readbackBuffer[idx + 3] = 0.0;
+                        }
+                    }
+                }
+            }
+        }
+        this.barrierTexture.needsUpdate = true;
+    }
+
+    protectPolygon(polygonGrid) {
+        if (!polygonGrid || polygonGrid.length < 3) return;
+        let minX = this.gridW, maxX = 0, minY = this.gridH, maxY = 0;
+        for (const pt of polygonGrid) {
+            minX = Math.min(minX, Math.floor(pt.gx));
+            maxX = Math.max(maxX, Math.ceil(pt.gx));
+            minY = Math.min(minY, Math.floor(pt.gy));
+            maxY = Math.max(maxY, Math.ceil(pt.gy));
+        }
+        minX = Math.max(0, minX);
+        maxX = Math.min(this.gridW - 1, maxX);
+        minY = Math.max(0, minY);
+        maxY = Math.min(this.gridH - 1, maxY);
+        
+        const n = polygonGrid.length;
+        for (let y = minY; y <= maxY; y++) {
+            for (let x = minX; x <= maxX; x++) {
+                let inside = false;
+                for (let i = 0, j = n - 1; i < n; j = i++) {
+                    const xi = polygonGrid[i].gx, yi = polygonGrid[i].gy;
+                    const xj = polygonGrid[j].gx, yj = polygonGrid[j].gy;
+                    const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi + 1e-7) + xi);
+                    if (intersect) inside = !inside;
+                }
+                if (inside) {
+                    const idx = (y * this.gridW + x) * 4;
+                    this.barrierData[idx + 1] = 1.0; // 100% protected cell
+                    if (this.readbackBuffer) {
+                        this.readbackBuffer[idx] = 0.0;
+                        this.readbackBuffer[idx + 1] = 0.0;
+                        this.readbackBuffer[idx + 2] = 0.0;
+                        this.readbackBuffer[idx + 3] = 0.0;
                     }
                 }
             }

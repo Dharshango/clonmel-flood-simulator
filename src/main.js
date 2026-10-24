@@ -709,6 +709,18 @@ async function init() {
                 `;
             }
         }
+
+        const readCoords = document.getElementById('readout-coords');
+        const readStreet = document.getElementById('readout-street');
+        if (cfg.id === 'dibrugarh') {
+            selectedInspectUV = { u: 0.50, v: 0.50, street: 'Thana Chariali / AT Road', lon: 94.9165, lat: 27.4835 };
+            if (readCoords) readCoords.textContent = '27.4835°N, 94.9165°E';
+            if (readStreet) readStreet.textContent = 'Thana Chariali / AT Road';
+        } else {
+            selectedInspectUV = { u: 0.53, v: 0.44, street: 'The Quay / Quay Street', lon: -7.7063, lat: 52.3553 };
+            if (readCoords) readCoords.textContent = '52.3553°N, 7.7063°W';
+            if (readStreet) readStreet.textContent = 'The Quay / Quay Street';
+        }
     }
 
     function updateScenarioButtonsForTown(cfg) {

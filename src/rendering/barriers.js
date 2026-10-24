@@ -129,7 +129,13 @@ export function createBarriersManager(scene, meta, simulator, elevArray) {
         const effectiveDepth = Math.max(0.3, Number(depth) || (isWall ? 2.0 : 1.0));
         
         const meshes = [];
-        const widthCells = isWall ? Math.max(1, Math.round(effectiveThickness / 1.5)) : Math.max(2, Math.round(effectiveThickness / 1.2));
+        const widthCells = Math.max(2, isWall ? Math.round(effectiveThickness / 1.2) : Math.round(effectiveThickness / 1.0));
+        
+        // If drawing encloses an area (>= 3 points), protect the interior space
+        if (pointsLonLat.length >= 3 && simulator && typeof simulator.protectPolygon === 'function') {
+            const gridPts = pointsLonLat.map(p => lonlatToGrid(p[0], p[1]));
+            simulator.protectPolygon(gridPts);
+        }
 
         for (let i = 0; i < pointsLonLat.length - 1; i++) {
             const p0 = pointsLonLat[i];

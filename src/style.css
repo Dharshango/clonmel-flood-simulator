@@ -251,7 +251,7 @@ body {
     gap: 6px;
     flex: 1;
     min-width: 0;
-    max-width: calc(100vw - 280px);
+    max-width: min(100%, calc(100vw - 200px));
     pointer-events: none;
 }
 
@@ -332,20 +332,22 @@ body {
     left: auto;
     top: auto;
     transform: none;
-    display: flex;
+    display: inline-flex;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 4px;
-    background: rgba(13, 19, 32, 0.85);
+    gap: 3px;
+    background: rgba(13, 19, 32, 0.92);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     padding: 3px 6px;
     border-radius: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
     pointer-events: auto;
     max-width: 100%;
     overflow-x: auto;
     scrollbar-width: none;
+    box-sizing: border-box;
 }
 
 .header-modes.center-modes::-webkit-scrollbar {
@@ -358,12 +360,13 @@ body {
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     color: #94a3b8;
-    padding: 5px 12px;
-    border-radius: 14px;
-    font-size: 11.5px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
     font-weight: 700;
     cursor: pointer;
     white-space: nowrap;
+    flex-shrink: 0;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -2863,9 +2866,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .infra-facility-item.selected {
-    background: rgba(14, 165, 233, 0.18);
-    border-color: rgba(56, 189, 248, 0.75);
-    box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    background: rgba(37, 99, 235, 0.45) !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.45), inset 0 0 8px rgba(37, 99, 235, 0.3) !important;
 }
 
 .fac-left {
@@ -4073,8 +4076,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .switch-toggle {
     position: relative;
     display: inline-block;
-    width: 32px;
-    height: 18px;
+    width: 36px !important;
+    height: 20px !important;
+    flex-shrink: 0 !important;
 }
 
 .switch-toggle input {
@@ -4086,35 +4090,34 @@ input[type="range"]::-webkit-slider-thumb:hover {
 .slider-round {
     position: absolute;
     cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background-color: #1e293b;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    transition: .3s;
-    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    transition: .25s ease;
+    border-radius: 20px;
+    box-sizing: border-box;
 }
 
 .slider-round:before {
     position: absolute;
     content: "";
-    height: 12px;
-    width: 12px;
+    height: 14px;
+    width: 14px;
     left: 2px;
-    bottom: 2px;
+    top: 2px;
     background-color: #94a3b8;
-    transition: .3s;
+    transition: .25s ease;
     border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .switch-toggle input:checked + .slider-round {
-    background-color: rgba(245, 158, 11, 0.3);
+    background-color: rgba(245, 158, 11, 0.35);
     border-color: #f59e0b;
 }
 
 .switch-toggle input:checked + .slider-round:before {
-    transform: translateX(14px);
+    transform: translateX(16px);
     background-color: #f59e0b;
 }
 
@@ -4237,8 +4240,9 @@ input[type="range"]::-webkit-slider-thumb:hover {
 }
 
 .def-asset-row-item.selected {
-    background: rgba(56, 189, 248, 0.12);
-    border-color: #38bdf8;
+    background: rgba(37, 99, 235, 0.45) !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.45), inset 0 0 8px rgba(37, 99, 235, 0.3) !important;
 }
 
 .def-item-left {
@@ -4582,13 +4586,13 @@ input[type="range"]::-webkit-slider-thumb:hover {
 /* Responsive Compact Navigation to prevent overlapping on screens <= 1500px */
 @media (max-width: 1500px) {
     .mode-tab {
-        padding: 3.5px 7px !important;
-        font-size: 10.5px !important;
+        padding: 3.5px 6.5px !important;
+        font-size: 10px !important;
         letter-spacing: -0.2px !important;
         border-radius: 10px !important;
     }
     .header-modes.center-modes {
-        gap: 2.5px !important;
+        gap: 2px !important;
         padding: 2.5px 4px !important;
     }
     .town-pill-btn {
@@ -4603,10 +4607,11 @@ input[type="range"]::-webkit-slider-thumb:hover {
 
 @media (max-width: 1280px) {
     .mode-tab {
-        padding: 3px 5.5px !important;
-        font-size: 10px !important;
+        padding: 3px 5px !important;
+        font-size: 9.5px !important;
     }
     .header-modes.center-modes {
-        gap: 2px !important;
+        gap: 1.5px !important;
+        padding: 2px 3px !important;
     }
 }

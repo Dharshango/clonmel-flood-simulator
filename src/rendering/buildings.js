@@ -206,17 +206,19 @@ export function createBuildingsLayer(meta, buildingsData, elevArray, riverMaskIm
             const gElev = b.groundElev;
             
             let maxH = 0.0;
-            // Physical fluvial flood envelope: River Suir peak flood elevation in Clonmel reaches ~20.5m - 20.8m OD.
-            // Buildings above 22.2m OD (terraces, upper town, hills) are physically immune from River Suir overtopping.
-            if (gElev <= 22.2) {
+            const isClonmel = bbox.south > 50.0;
+            const isHighland = isClonmel ? (gElev > 22.5) : (gElev > 108.5);
+            if (!isHighland) {
                 for (let k = 0; k < len; k++) {
                     const off = offsets[k];
                     const h = buf[off];
                     if (h >= 0.08) {
+                        const isRiver = isRiverArr[k] === 1;
                         const cellElev = cellElevs[k];
                         const wse = cellElev + h;
-                        // Flood occurs when water surface elevation overtops building ground threshold
-                        const overtop = wse - gElev;
+                        // River channel water only floods if water surface elevation overtops bank.
+                        // Overland street water floods by direct local depth or overtopping.
+                        const overtop = isRiver ? (wse - gElev) : Math.max(h, wse - gElev);
                         if (overtop > maxH) {
                             maxH = overtop;
                         }
@@ -242,15 +244,16 @@ export function createBuildingsLayer(meta, buildingsData, elevArray, riverMaskIm
                 b.status = 'safe';
             }
             
-            if (baseBuf && gElev <= 22.2) {
+            if (baseBuf && !isHighland) {
                 let baseMaxH = 0.0;
                 for (let k = 0; k < len; k++) {
                     const off = offsets[k];
                     const h = baseBuf[off];
                     if (h >= 0.08) {
+                        const isRiver = isRiverArr[k] === 1;
                         const cellElev = cellElevs[k];
                         const wse = cellElev + h;
-                        const overtop = wse - gElev;
+                        const overtop = isRiver ? (wse - gElev) : Math.max(h, wse - gElev);
                         if (overtop > baseMaxH) baseMaxH = overtop;
                     }
                 }
