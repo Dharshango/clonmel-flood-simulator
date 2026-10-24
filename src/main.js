@@ -3749,7 +3749,11 @@ async function init() {
 
         requestAnimationFrame(animate);
 
-        
+        const isHeroVisible = heroSection && !heroSection.classList.contains('hidden') && heroSection.style.display !== 'none';
+        if (isHeroVisible) {
+            // While hero section is open, suspend heavy 3D solver and GPU readbacks so hero animation is silky smooth
+            return;
+        }
 
         const dtReal = (now - lastTime) / 1000.0;
 
