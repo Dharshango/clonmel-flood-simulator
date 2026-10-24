@@ -79,7 +79,8 @@ body {
   pointer-events: none !important;
 }
 
-.brand, .brand-mark, .brand-light, .brand-nav-link, .brand-mark-nav, .brand-nav-text {
+/* Keep studio header clean: prevent brand overlays in studio mode */
+#top-nav .brand, #top-nav .brand-mark, #top-nav .brand-light, #top-nav .brand-nav-link, #top-nav .brand-mark-nav, #top-nav .brand-nav-text {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
